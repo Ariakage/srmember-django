@@ -19,6 +19,20 @@ from django.core.management.utils import get_random_secret_key
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def load_local_env(path):
+    if not path.exists():
+        return
+    for line in path.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, value = line.split('=', 1)
+        os.environ.setdefault(key, value)
+
+
+load_local_env(BASE_DIR / '.env')
+
+
 # Quick-start development settings - unsuitable for production 喵
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/ 喵
 
@@ -28,7 +42,11 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY') or get_random_secret_key()
 # SECURITY WARNING: don't run with debug turned on in production! 喵
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',')
+    if host.strip()
+]
 
 
 # Application definition 喵
@@ -128,3 +146,12 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+OAUTH_CLIENT_ID = os.environ.get('OAUTH_CLIENT_ID', '')
+OAUTH_CLIENT_SECRET = os.environ.get('OAUTH_CLIENT_SECRET', '')
+OAUTH_SERVER_METADATA_URL = os.environ.get(
+    'OAUTH_SERVER_METADATA_URL',
+    'https://united.sr-studio.cn/.well-known/openid-configuration',
+)
+OAUTH_SCOPE = os.environ.get('OAUTH_SCOPE', 'openid profile email')
+OAUTH_TOKEN_ENDPOINT_AUTH_METHOD = os.environ.get('OAUTH_TOKEN_ENDPOINT_AUTH_METHOD', 'client_secret_post')
