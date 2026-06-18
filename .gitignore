@@ -8,7 +8,8 @@ __pycache__/
 !.env.example
 
 db.sqlite3
-media/
+media/*
+!media/.gitkeep
 staticfiles/
 
 .DS_Store
@@ -16,5 +17,3 @@ staticfiles/
 .ruff_cache/
 .coverage
 htmlcov/
-
-AGENTS.md
