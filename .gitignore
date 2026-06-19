@@ -19,3 +19,4 @@ staticfiles/
 htmlcov/
 
 .uploads/
+.uv-cache/
