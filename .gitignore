@@ -20,3 +20,6 @@ htmlcov/
 
 .uploads/
 .uv-cache/
+
+AGENTS.md
+PROMPTS.md

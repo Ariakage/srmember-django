@@ -704,6 +704,8 @@ class CoreViewTests(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertFalse(admin_user.has_usable_password())
+        admin_response = self.client.get('/admin/', HTTP_HOST='127.0.0.1')
+        self.assertContains(admin_response, "background-image: url('https://example.com/admin.png');")
 
     def test_oauth_callback_blocks_non_admin_user_from_admin_next_url(self):
         session = self.client.session
