@@ -10,10 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import importlib.util
 import os
 from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
+from django.templatetags.static import static
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'. 喵
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,6 +53,10 @@ ALLOWED_HOSTS = [
 
 # Application definition 喵
 
+HAS_DJANGO_UNFOLD = importlib.util.find_spec('unfold') is not None
+
+UNFOLD_APPS = ['unfold'] if HAS_DJANGO_UNFOLD else []
+
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -68,7 +74,38 @@ THIRD_PARTY_APPS = [
     'martor',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
+INSTALLED_APPS = UNFOLD_APPS + DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
+
+UNFOLD = {
+    'SITE_TITLE': 'SRMember 管理后台',
+    'SITE_HEADER': 'SR思锐 管理后台',
+    'SITE_SUBHEADER': '团队内部成员系统',
+    'SITE_URL': '/',
+    'SITE_SYMBOL': 'admin_panel_settings',
+    'SITE_ICON': {
+        'light': lambda request: static('images/logo.png'),
+        'dark': lambda request: static('images/logo.png'),
+    },
+    'SITE_LOGO': {
+        'light': lambda request: static('images/logo.png'),
+        'dark': lambda request: static('images/logo.png'),
+    },
+    'COLORS': {
+        'primary': {
+            '50': '245 243 255',
+            '100': '237 233 254',
+            '200': '221 214 254',
+            '300': '196 181 253',
+            '400': '167 139 250',
+            '500': '124 108 255',
+            '600': '109 88 230',
+            '700': '91 70 204',
+            '800': '75 58 169',
+            '900': '55 45 122',
+            '950': '36 27 83',
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

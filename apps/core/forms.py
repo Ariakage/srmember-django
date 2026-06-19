@@ -1,5 +1,6 @@
 from django import forms
-from martor.widgets import AdminMartorWidget, MartorWidget
+from django.utils.safestring import mark_safe
+from martor.widgets import MartorWidget
 
 from .models import BioProfile
 
@@ -26,6 +27,37 @@ class IsolatedMartorWidget(MartorWidget):
         )
 
 
+class AdminIsolatedMartorWidget(IsolatedMartorWidget):
+    class Media:
+        extend = False
+        css = {
+            'all': (
+                'plugins/css/ace.min.css',
+                'plugins/css/highlight.min.css',
+                'martor/css/martor.tailwind.min.css',
+                'core/css/markdown.css',
+                'core/css/martor.css',
+            )
+        }
+        js = (
+            'plugins/js/jquery.min.js',
+            'plugins/js/ace.js',
+            'plugins/js/mode-markdown.js',
+            'plugins/js/ext-language_tools.js',
+            'plugins/js/theme-github.js',
+            'plugins/js/highlight.min.js',
+            'plugins/js/emojis.min.js',
+            'martor/js/martor.tailwind.min.js',
+            'core/js/mathjax_config.js',
+            'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+            'core/js/markdown_tools.js',
+        )
+
+    def render(self, name, value, attrs=None, renderer=None, **kwargs):
+        rendered = super().render(name, value, attrs=attrs, renderer=renderer, **kwargs)
+        return mark_safe(f'<div class="sr-bio-editor sr-admin-bio-editor">{rendered}</div>')
+
+
 class BioProfileForm(forms.ModelForm):
     markdown = forms.CharField(required=False, widget=IsolatedMartorWidget(attrs={'rows': 24}))
 
@@ -35,7 +67,7 @@ class BioProfileForm(forms.ModelForm):
 
 
 class BioProfileAdminForm(forms.ModelForm):
-    markdown = forms.CharField(required=False, widget=AdminMartorWidget(attrs={'rows': 24}))
+    markdown = forms.CharField(required=False, widget=AdminIsolatedMartorWidget(attrs={'rows': 24}))
 
     class Meta:
         model = BioProfile

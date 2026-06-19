@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import TestCase
 
+from . import admin as core_admin
 from . import views
 from .feishu import fetch_feishu_document_metadata, parse_feishu_doc_token
 from .markdown import render_markdown
@@ -874,11 +875,24 @@ class CoreViewTests(TestCase):
         response = self.client.get('/admin/', HTTP_HOST='127.0.0.1')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'admin/css/srmember_admin.css')
+        self.assertNotContains(response, 'admin/css/srmember_admin.css')
+        self.assertNotContains(response, 'sr-admin-brand')
+        self.assertContains(response, 'unfold/css/styles.css')
         self.assertContains(response, '/static/images/logo.png')
-        self.assertContains(response, 'SR思锐 管理后台')
-        self.assertContains(response, '最近动作')
+        self.assertContains(response, 'SRMember 管理后台')
         self.assertContains(response, '注销')
+
+    def test_unfold_admin_settings_are_ready_for_installation(self):
+        self.assertEqual(settings.UNFOLD['SITE_TITLE'], 'SRMember 管理后台')
+        self.assertEqual(settings.UNFOLD['SITE_HEADER'], 'SR思锐 管理后台')
+        self.assertEqual(settings.UNFOLD['SITE_SUBHEADER'], '团队内部成员系统')
+        self.assertEqual(settings.UNFOLD['COLORS']['primary']['500'], '124 108 255')
+        self.assertTrue(issubclass(core_admin.OAuthLookupCodeAdmin, core_admin.UnfoldModelAdmin))
+        if settings.HAS_DJANGO_UNFOLD:
+            self.assertLess(
+                settings.INSTALLED_APPS.index('unfold'),
+                settings.INSTALLED_APPS.index('django.contrib.admin'),
+            )
 
     def test_admin_oauth_lookup_code_list_shows_code_avatar_and_nickname(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
@@ -979,7 +993,7 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '后台手动成员')
         self.assertContains(response, '手动成员')
 
-    def test_admin_bio_profile_change_form_has_martor_editor(self):
+    def test_admin_bio_profile_change_form_uses_isolated_martor_editor(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
         lookup_code = OAuthLookupCode.objects.create(
             sr_user_id='admin-editor-user',
@@ -994,31 +1008,36 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'martor/js/martor.tailwind')
         self.assertContains(response, 'plugins/js/ace.js')
         self.assertContains(response, 'data-markdownfy-url="/martor/markdownify/"')
-        self.assertContains(response, 'admin/css/bio_admin.css')
+        self.assertContains(response, 'name="markdown"')
+        self.assertContains(response, 'sr-admin-bio-editor')
+        self.assertContains(response, 'core/css/markdown.css')
+        self.assertContains(response, 'core/css/martor.css')
         self.assertContains(response, 'core/js/markdown_tools.js')
+        self.assertNotContains(response, 'admin/css/bio_admin.css')
+        self.assertNotContains(response, 'plugins/css/tailwind.min.css')
+        self.assertNotContains(response, 'plugins/js/tailwind.min.js')
+        self.assertNotContains(response, 'martor/css/martor-admin.min.css')
         self.assertContains(response, '# Admin Title')
         self.assertNotContains(response, 'bindAdminEditor')
         self.assertNotContains(response, 'sr-admin-markdown-source')
         self.assertNotContains(response, '渲染预览')
+        html = response.content.decode()
+        self.assertLess(html.index('martor/css/martor.tailwind.min.css'), html.index('core/css/markdown.css'))
+        self.assertLess(html.index('core/css/markdown.css'), html.index('core/css/martor.css'))
+        self.assertLess(html.index('martor/js/martor.tailwind.min.js'), html.index('core/js/markdown_tools.js'))
 
     def test_martor_styles_define_light_and_dark_editor_colors(self):
         frontend_css = Path(settings.BASE_DIR / 'static/core/css/martor.css').read_text()
         markdown_css = Path(settings.BASE_DIR / 'static/core/css/markdown.css').read_text()
-        admin_css = Path(settings.BASE_DIR / 'static/admin/css/bio_admin.css').read_text()
 
         self.assertIn('--sr-martor-bg: #ffffff;', frontend_css)
         self.assertNotIn('.dark .sr-bio-editor', frontend_css)
         self.assertIn('--sr-martor-code-bg: #ffffff;', frontend_css)
         self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-shell', frontend_css)
+        self.assertIn('.martor-preview.sr-markdown-shell', frontend_css)
+        self.assertIn('--sr-martor-active: #7c6cff;', frontend_css)
         self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-body .admonition', frontend_css)
         self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-body details', frontend_css)
         self.assertIn('.sr-bio-editor .ace_editor', frontend_css)
         self.assertIn('--sr-md-code-bg: #0b1020;', markdown_css)
         self.assertIn('.sr-markdown-body .highlight .nx', markdown_css)
-        self.assertIn('--sr-admin-martor-bg: #ffffff;', admin_css)
-        self.assertNotIn('html[data-theme="dark"] .model-bioprofile', admin_css)
-        self.assertIn('--sr-admin-martor-code-bg: #ffffff;', admin_css)
-        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-shell', admin_css)
-        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-body .admonition', admin_css)
-        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-body details', admin_css)
-        self.assertIn('.model-bioprofile .ace_editor', admin_css)

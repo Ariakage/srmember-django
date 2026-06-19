@@ -240,6 +240,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-unfold"
+version = "0.98.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0a/fc/0b484b3c8ebc971262a3b694a1a699334f5f8b6d3f94bf8942da85627c6c/django_unfold-0.98.0.tar.gz", hash = "sha256:d01f149ee63772023f653f33263ff93339c455673903a4c600716741e54c477f", size = 1125339, upload-time = "2026-06-19T09:13:36.565Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/fe/9b8ffce2a86bfc1543baa4d52f9b736a4df83fade73eda6db0c7ae151238/django_unfold-0.98.0-py3-none-any.whl", hash = "sha256:fbf242ec69fe7401d5d2c2fc350e9eb1c0b36791469cd5d7b08b536bd8cdae08", size = 1252737, upload-time = "2026-06-19T09:13:35.282Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.18"
 source = { registry = "https://pypi.org/simple" }
@@ -396,6 +408,7 @@ dependencies = [
     { name = "authlib" },
     { name = "bleach" },
     { name = "django" },
+    { name = "django-unfold" },
     { name = "markdown" },
     { name = "martor" },
     { name = "pygments" },
@@ -409,6 +422,7 @@ requires-dist = [
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "bleach", specifier = ">=6.4.0" },
     { name = "django", specifier = ">=6.0.6" },
+    { name = "django-unfold", specifier = ">=0.98.0" },
     { name = "markdown", specifier = ">=3.10.2" },
     { name = "martor", specifier = ">=1.8.1" },
     { name = "pygments", specifier = ">=2.20.0" },

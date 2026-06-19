@@ -217,6 +217,120 @@
     z-index: 70;
 }
 
+.sr-admin-bio-editor {
+    background: #ffffff;
+    color: #0f172a;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.martor-preview.sr-markdown-shell {
+    --sr-martor-active: #7c6cff;
+    --sr-md-text: #0f172a;
+    --sr-md-muted: #475569;
+    --sr-md-border: #dbe3ef;
+    --sr-md-soft-border: #e2e8f0;
+    --sr-md-surface: #ffffff;
+    --sr-md-soft-surface: #f8fafc;
+    --sr-md-inline-code-bg: #eef2ff;
+    --sr-md-inline-code-text: #4f46e5;
+    --sr-md-code-shell: #ffffff;
+    --sr-md-code-bg: #f8fafc;
+    --sr-md-code-line: #e0e7ff;
+    --sr-md-code-text: #1e293b;
+    --sr-md-token-comment: #64748b;
+    --sr-md-token-keyword: #6d28d9;
+    --sr-md-token-string: #047857;
+    --sr-md-token-number: #b45309;
+    --sr-md-token-name: #0369a1;
+    --sr-md-token-operator: #334155;
+}
+
+.martor-preview.sr-markdown-body {
+    background: var(--sr-md-surface);
+    color: var(--sr-md-text);
+}
+
+.martor-preview.sr-markdown-body h1,
+.martor-preview.sr-markdown-body h2,
+.martor-preview.sr-markdown-body h3,
+.martor-preview.sr-markdown-body h4,
+.martor-preview.sr-markdown-body h5,
+.martor-preview.sr-markdown-body h6,
+.martor-preview.sr-markdown-body summary,
+.martor-preview.sr-markdown-body .admonition-title {
+    color: var(--sr-md-text);
+}
+
+.martor-preview.sr-markdown-body h2 {
+    border-color: var(--sr-md-soft-border);
+}
+
+.martor-preview.sr-markdown-body p,
+.martor-preview.sr-markdown-body li,
+.martor-preview.sr-markdown-body td,
+.martor-preview.sr-markdown-body th,
+.martor-preview.sr-markdown-body dd {
+    color: var(--sr-md-muted);
+}
+
+.martor-preview.sr-markdown-body th {
+    color: var(--sr-md-text);
+}
+
+.martor-preview.sr-markdown-body .admonition {
+    background: var(--sr-md-soft-surface);
+    border: 1px solid var(--sr-md-border);
+    border-left: 5px solid var(--sr-martor-active);
+}
+
+.martor-preview.sr-markdown-body .admonition.tip,
+.martor-preview.sr-markdown-body details.tip {
+    border-left-color: #14b8a6;
+}
+
+.martor-preview.sr-markdown-body .admonition.warning,
+.martor-preview.sr-markdown-body details.warning {
+    border-left-color: #f59e0b;
+}
+
+.martor-preview.sr-markdown-body .admonition.danger,
+.martor-preview.sr-markdown-body .admonition.caution,
+.martor-preview.sr-markdown-body details.caution {
+    border-left-color: #ef4444;
+}
+
+.martor-preview.sr-markdown-body details {
+    background: var(--sr-md-surface);
+    border-color: var(--sr-md-border);
+}
+
+.martor-preview.sr-markdown-body details.note,
+.martor-preview.sr-markdown-body details.important {
+    border-left-color: var(--sr-martor-active);
+}
+
+.martor-preview.sr-markdown-body .tabbed-set,
+.martor-preview.sr-markdown-body .sr-code-wrap {
+    border-color: var(--sr-md-border);
+}
+
+.martor-preview.sr-markdown-body .tabbed-labels,
+.martor-preview.sr-markdown-body th {
+    background: var(--sr-md-soft-surface);
+}
+
+.martor-preview.sr-markdown-body mark {
+    background: #fef3c7;
+    color: var(--sr-md-text);
+}
+
+.martor-preview.sr-markdown-body kbd {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: var(--sr-md-text);
+}
+
 @media (max-width: 640px) {
     .sr-bio-editor .martor-toolbar {
         margin-top: 0.5rem;

@@ -5,13 +5,18 @@ from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
 
+try:
+    from unfold.admin import ModelAdmin as UnfoldModelAdmin
+except ImportError:
+    UnfoldModelAdmin = admin.ModelAdmin
+
 from .feishu import fetch_feishu_document_metadata
 from .forms import BioProfileAdminForm
 from .models import BioProfile, FeishuDocument, FeishuDocumentSetting, MemberProfile, OAuthLookupCode, ShortcutLink, SiteSetting
 
 
 @admin.register(OAuthLookupCode)
-class OAuthLookupCodeAdmin(admin.ModelAdmin):
+class OAuthLookupCodeAdmin(UnfoldModelAdmin):
     list_display = ('avatar_preview', 'identification_code', 'nickname', 'sr_user_id', 'email', 'is_admin', 'updated_at')
     list_filter = ('is_admin', 'created_at', 'updated_at')
     search_fields = ('identification_code', 'sr_user_id', 'nickname', 'email')
@@ -59,7 +64,7 @@ class OAuthLookupCodeAdmin(admin.ModelAdmin):
 
 
 @admin.register(SiteSetting)
-class SiteSettingAdmin(admin.ModelAdmin):
+class SiteSettingAdmin(UnfoldModelAdmin):
     fields = ('footer_copyright', 'footer_record_text', 'footer_record_url')
     list_display = ('footer_copyright', 'footer_record_text', 'updated_at')
 
@@ -68,7 +73,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
 
 
 @admin.register(BioProfile)
-class BioProfileAdmin(admin.ModelAdmin):
+class BioProfileAdmin(UnfoldModelAdmin):
     form = BioProfileAdminForm
     list_display = ('avatar_preview', 'nickname', 'identification_code', 'sr_user_id', 'updated_at')
     list_select_related = ('lookup_code', 'user')
@@ -85,14 +90,6 @@ class BioProfileAdmin(admin.ModelAdmin):
         'updated_at',
     )
     ordering = ('-updated_at',)
-
-    class Media:
-        css = {'all': ('core/css/markdown.css', 'admin/css/bio_admin.css')}
-        js = (
-            'core/js/mathjax_config.js',
-            'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
-            'core/js/markdown_tools.js',
-        )
 
     @admin.display(description='头像')
     def avatar_preview(self, obj):
@@ -116,7 +113,7 @@ class BioProfileAdmin(admin.ModelAdmin):
 
 
 @admin.register(ShortcutLink)
-class ShortcutLinkAdmin(admin.ModelAdmin):
+class ShortcutLinkAdmin(UnfoldModelAdmin):
     list_display = ('title', 'url', 'sort_order', 'is_active', 'open_new_tab', 'updated_at')
     list_editable = ('sort_order', 'is_active', 'open_new_tab')
     list_filter = ('is_active', 'open_new_tab', 'created_at', 'updated_at')
@@ -126,7 +123,7 @@ class ShortcutLinkAdmin(admin.ModelAdmin):
 
 
 @admin.register(FeishuDocumentSetting)
-class FeishuDocumentSettingAdmin(admin.ModelAdmin):
+class FeishuDocumentSettingAdmin(UnfoldModelAdmin):
     fields = ('app_id', 'app_key')
     list_display = ('app_id', 'updated_at')
 
@@ -140,7 +137,7 @@ class FeishuDocumentSettingAdmin(admin.ModelAdmin):
 
 
 @admin.register(FeishuDocument)
-class FeishuDocumentAdmin(admin.ModelAdmin):
+class FeishuDocumentAdmin(UnfoldModelAdmin):
     list_display = ('cover_preview', 'display_name', 'document_url', 'is_pinned', 'sort_order', 'is_active', 'updated_at')
     list_editable = ('is_pinned', 'sort_order', 'is_active')
     list_filter = ('is_active', 'is_pinned', 'open_new_tab', 'created_at', 'updated_at')
@@ -200,7 +197,7 @@ class FeishuDocumentAdmin(admin.ModelAdmin):
 
 
 @admin.register(MemberProfile)
-class MemberProfileAdmin(admin.ModelAdmin):
+class MemberProfileAdmin(UnfoldModelAdmin):
     list_display = ('avatar_preview', 'display_name', 'oauth_account', 'sort_order', 'is_active', 'updated_at')
     list_editable = ('sort_order', 'is_active')
     list_filter = ('is_active', 'created_at', 'updated_at')
