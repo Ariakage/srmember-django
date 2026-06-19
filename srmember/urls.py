@@ -21,7 +21,7 @@ from django.urls import include, path
 from apps.core import views as core_views
 
 admin.site.site_header = 'SR思锐 管理后台'
-admin.site.site_title = 'SRMember Admin'
+admin.site.site_title = 'SRMember 管理后台'
 admin.site.index_title = '团队内部成员系统管理'
 
 urlpatterns = [

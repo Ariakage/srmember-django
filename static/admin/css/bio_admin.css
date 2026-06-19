@@ -1,0 +1,103 @@
+.model-bioprofile .form-row.field-markdown > div,
+.model-bioprofile .form-row.field-markdown .flex-container {
+    display: block;
+    width: 100%;
+}
+
+.model-bioprofile .form-row.field-markdown label {
+    display: block;
+    float: none;
+    margin: 0 0 0.75rem;
+    width: auto;
+}
+
+.sr-admin-markdown-editor {
+    background: var(--body-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.6rem;
+    box-sizing: border-box;
+    max-width: none;
+    overflow: hidden;
+    width: 100%;
+}
+
+.sr-admin-editor-controls {
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    justify-content: flex-start;
+    margin: 0;
+    padding: 0.25rem;
+    width: 100%;
+}
+
+.sr-admin-editor-controls .sr-editor-tab {
+    border: 0;
+    border-radius: 0.35rem;
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0.45rem 0.75rem;
+}
+
+.sr-admin-editor-controls .sr-editor-tab[aria-pressed="false"] {
+    background: transparent;
+    color: var(--body-quiet-color);
+}
+
+.sr-admin-code-panel textarea {
+    background: var(--body-bg);
+    border: 0;
+    box-sizing: border-box;
+    color: var(--body-fg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    line-height: 1.7;
+    min-height: 32rem;
+    outline: none;
+    padding: 1rem;
+    width: 100%;
+}
+
+.sr-admin-visual-panel {
+    max-width: none;
+    width: 100%;
+}
+
+.sr-admin-preview {
+    background: var(--body-bg);
+    border: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+    color: var(--body-fg);
+    min-height: 32rem;
+    padding: 1rem;
+    width: 100%;
+}
+
+.sr-admin-preview.sr-markdown-body,
+.sr-admin-preview.sr-markdown-body p,
+.sr-admin-preview.sr-markdown-body li,
+.sr-admin-preview.sr-markdown-body td,
+.sr-admin-preview.sr-markdown-body th,
+.sr-admin-preview.sr-markdown-body dd {
+    color: var(--body-fg);
+}
+
+.sr-admin-preview.sr-markdown-body h1,
+.sr-admin-preview.sr-markdown-body h2,
+.sr-admin-preview.sr-markdown-body h3,
+.sr-admin-preview.sr-markdown-body h4,
+.sr-admin-preview.sr-markdown-body h5,
+.sr-admin-preview.sr-markdown-body h6,
+.sr-admin-preview.sr-markdown-body summary {
+    color: var(--body-fg);
+}
+
+.sr-admin-rendered-preview {
+    background: var(--darkened-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.45rem;
+    max-width: 64rem;
+    padding: 1rem;
+}

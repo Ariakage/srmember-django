@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}编辑 Bio | SR思锐 团队内部成员系统{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{% static 'core/css/markdown.css' %}">
+<script>
+    window.MathJax = {
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        },
+        tex: {
+            displayMath: [['\\[', '\\]'], ['$$', '$$']],
+            inlineMath: [['\\(', '\\)'], ['$', '$']],
+            processEscapes: true
+        }
+    }
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script defer src="{% static 'core/js/markdown_tools.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <div class="text-sm font-medium text-primary">Bio 编辑</div>
+            <h1 class="mt-1 text-3xl font-semibold tracking-normal text-slate-950 dark:text-white">{{ lookup_code.nickname }}</h1>
+            <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">查找码：{{ lookup_code.identification_code }}</div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'core:bio_help' %}" class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">
+                语法帮助
+            </a>
+            <a href="{% url 'core:bio' %}" class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">
+                查看 Bio
+            </a>
+        </div>
+    </div>
+
+    <form method="post" class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
+        {% csrf_token %}
+        <div class="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+            <div id="bio-editor-tabs" class="inline-flex w-fit rounded-md border border-slate-200 bg-slate-50 p-1 dark:border-white/10 dark:bg-slate-950">
+                <button type="button" data-mode="visual" aria-pressed="false" class="sr-editor-tab rounded px-3 py-1.5 text-sm font-semibold text-slate-600 transition dark:text-slate-300">
+                    所见即所得
+                </button>
+                <button type="button" data-mode="code" aria-pressed="true" class="sr-editor-tab rounded px-3 py-1.5 text-sm font-semibold text-slate-600 transition dark:text-slate-300">
+                    代码模式
+                </button>
+            </div>
+            <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:bg-primary-2">
+                保存
+            </button>
+        </div>
+
+        <div id="bio-code-panel" class="sr-editor-panel p-4">
+            <textarea id="bio-markdown" name="markdown" rows="24" class="min-h-[28rem] w-full resize-y rounded-md border border-slate-200 bg-white px-4 py-3 font-mono text-sm leading-7 text-slate-950 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-white/10 dark:bg-slate-950 dark:text-white">{{ bio_profile.markdown }}</textarea>
+        </div>
+
+        <div id="bio-visual-panel" class="sr-editor-panel p-4" hidden>
+            <div id="bio-preview" class="sr-markdown-shell sr-markdown-body sr-visual-editor rounded-md border border-slate-200 bg-white px-4 py-3 dark:border-white/10 dark:bg-slate-950" contenteditable="true">
+                {{ bio_html }}
+            </div>
+        </div>
+    </form>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        window.SRMarkdown.bindEditor({
+            codePanel: '#bio-code-panel',
+            endpoint: "{% url 'core:bio_preview' %}",
+            initialMode: 'code',
+            preview: '#bio-preview',
+            tabs: '#bio-editor-tabs [data-mode]',
+            textarea: '#bio-markdown',
+            visualPanel: '#bio-visual-panel'
+        })
+    })
+</script>
+{% endblock %}

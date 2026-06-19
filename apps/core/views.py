@@ -11,12 +11,15 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
-from django.http import FileResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
-from .models import SiteSetting
+from .markdown import render_markdown
+from .models import BioProfile, OAuthLookupCode, SiteSetting
 from .oauth import oauth
 
 
@@ -39,6 +42,145 @@ USERINFO_KEYS = (
     'isorganizationadmin',
     'isAdmin',
 )
+
+BIO_HELP_MARKDOWN = """# SRMember Bio Markdown 指南
+
+已启用 SuperFences、Highlight、InlineHilite、Arithmatex、Emoji、Tasklist、ProgressBar、MagicLink、BetterEm、Caret、Mark、Tilde、SmartSymbols、Critic、Blocks、Keys、Extra、FancyLists、SaneHeaders 和 B64。
+
+## SuperFences + Highlight
+
+```python hl_lines="2"
+def hello(name):
+    return f"Hello, {name}"
+```
+
+行内高亮：`#!python print("inline highlight")`
+
+## Arithmatex + MathJax
+
+行内公式：$E = mc^2$
+
+块级公式：
+
+$$
+\\int_0^1 x^2 dx = \\frac{1}{3}
+$$
+
+## Emoji + Tasklist + ProgressBar + MagicLink
+
+:sparkles: :rocket: :smile:
+
+- [x] 支持任务列表
+- [ ] 待完成项目
+
+[==72% "Bio 完成度"]
+
+自动链接：https://sr-studio.cn
+
+## BetterEm + Caret + Mark + Tilde + SmartSymbols + Critic + Keys
+
+**粗体**、_强调_、==高亮==、~~删除线~~、^上标^、~下标~、^^插入文本^^。
+
+SmartSymbols: (tm) (c) (r) +- --> <-- <--> =/= 1/4 1/2 3/4
+
+Critic: {++新增内容++} {--删除内容--} {==审阅高亮==} {>>批注内容<<} {~~旧内容~>新内容~~}
+
+Keys: ++ctrl+alt+delete++、++cmd+shift+p++
+
+## Extra + FancyLists + SaneHeaders + B64
+
+| 功能 | 示例 |
+| --- | --- |
+| Extra 表格 | 当前表格 |
+| Footnote | 见脚注[^bio] |
+| Attr List | 支持给元素附加属性 |
+
+1. FancyLists 正常编号
+#. 自动续号
+#. 继续自动续号
+
+标题需要空格才会被 SaneHeaders 识别，正文里的 value#not-heading 不会变成标题。
+
+![B64 Demo](static/core/images/b64-demo.svg)
+
+[^bio]: 脚注内容会显示在页面底部。
+
+## Blocks: Admonition
+
+/// note | Blocks Note
+这是一条 Blocks 新一代块系统的 note。
+///
+
+/// warning | Blocks Warning
+这是一条 warning。
+///
+
+## Blocks: Details
+
+/// details | 可折叠内容
+    open: true
+
+这里是默认展开的 details 内容。
+///
+
+/// spoiler | Spoiler 类型
+这里是自定义 details 类型。
+///
+
+## Blocks: Tab
+
+/// tab | Python
+```python
+print("tab python")
+```
+///
+
+/// tab | JavaScript
+```javascript
+console.log("tab javascript")
+```
+///
+
+## Blocks: Caption
+
+![Caption Demo](static/core/images/b64-demo.svg)
+/// caption
+这是一张使用 Blocks Caption 添加标题的本地图片。
+///
+
+## Blocks: Definition
+
+/// define
+SRMember
+
+- Django MTV 项目
+- 支持 OAuth Bio
+
+Bio
+
+- Markdown 个人资料
+- 可通过 sub 或查找码查看
+///
+
+## Blocks: HTML
+
+/// html | div.bio-html-demo
+    markdown: block
+
+**这是自定义 HTML 块**，内部仍然可以解析 Markdown。
+///
+
+## Quotes Callouts
+
+> [!NOTE]
+> 这是由 `pymdownx.quotes` 处理的 GitHub 风格 note。
+
+> [!TIP]+ Obsidian 可展开 Callout
+> 这里默认展开。
+
+> [!WARNING]- Obsidian 默认折叠 Callout
+> 这里默认折叠。
+"""
 
 
 def home(request):
@@ -64,6 +206,81 @@ def favicon(request):
     return FileResponse(favicon_path.open('rb'), content_type='image/x-icon')
 
 
+def bio(request, identifier=''):
+    lookup_value = (identifier or request.GET.get('q', '')).strip()
+    oauth_user = request.session.get(OAUTH_USER_SESSION_KEY)
+
+    if lookup_value:
+        lookup_code = get_or_create_bio_lookup_code(lookup_value)
+    elif oauth_user:
+        lookup_code = sync_oauth_lookup_code(oauth_user)
+    else:
+        next_url = reverse('core:bio')
+        return redirect(f"{reverse('core:oauth_login')}?{urlencode({'next': next_url})}")
+
+    bio_profile = get_bio_profile(lookup_code, request.user)
+    is_owner = is_bio_owner(oauth_user, lookup_code)
+
+    return render(
+        request,
+        'core/bio.html',
+        {
+            'bio_html': mark_safe(render_markdown(bio_profile.markdown)),
+            'bio_profile': bio_profile,
+            'is_owner': is_owner,
+            'lookup_code': lookup_code,
+            'oauth_user': oauth_user,
+            'search_value': lookup_value,
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
+def bio_edit(request):
+    oauth_user = request.session.get(OAUTH_USER_SESSION_KEY)
+    if not oauth_user:
+        next_url = reverse('core:bio_edit')
+        return redirect(f"{reverse('core:oauth_login')}?{urlencode({'next': next_url})}")
+
+    lookup_code = sync_oauth_lookup_code(oauth_user)
+    bio_profile = get_bio_profile(lookup_code, request.user)
+
+    if request.method == 'POST':
+        bio_profile.markdown = request.POST.get('markdown', '')
+        bio_profile.save()
+        return redirect('core:bio')
+
+    return render(
+        request,
+        'core/bio_edit.html',
+        {
+            'bio_html': mark_safe(render_markdown(bio_profile.markdown)),
+            'bio_profile': bio_profile,
+            'lookup_code': lookup_code,
+            'oauth_user': oauth_user,
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
+@require_POST
+def bio_preview(request):
+    return JsonResponse({'html': render_markdown(request.POST.get('markdown', ''))})
+
+
+def bio_help(request):
+    return render(
+        request,
+        'core/bio_help.html',
+        {
+            'help_html': mark_safe(render_markdown(BIO_HELP_MARKDOWN)),
+            'help_markdown': BIO_HELP_MARKDOWN,
+            'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
 def oauth_login(request):
     next_url = get_safe_redirect_url(request, request.GET.get('next'))
     if next_url:
@@ -79,6 +296,7 @@ def oauth_callback(request):
     userinfo = resolve_oauth_userinfo(token)
     print_oauth_payload('oauth resolved userinfo payload', userinfo)
     normalized_user = normalize_oauth_user(userinfo)
+    sync_oauth_lookup_code(normalized_user)
     redirect_url = get_oauth_callback_redirect_url(request, normalized_user)
     django_logout(request)
     request.session[OAUTH_USER_SESSION_KEY] = normalized_user
@@ -140,6 +358,56 @@ def normalize_oauth_user(userinfo):
         'email': first_oauth_value(payloads, ('email',)),
         'is_admin': first_oauth_bool(payloads, ('isorganizationadmin', 'isAdmin')),
     }
+
+
+def sync_oauth_lookup_code(oauth_user):
+    sr_user_id = get_oauth_lookup_user_id(oauth_user)
+    lookup_code, _ = OAuthLookupCode.objects.update_or_create(
+        sr_user_id=sr_user_id,
+        defaults={
+            'nickname': oauth_user.get('nickname', ''),
+            'avatar': oauth_user.get('avatar', ''),
+            'email': oauth_user.get('email', ''),
+            'is_admin': oauth_user.get('is_admin', False),
+        },
+    )
+    return lookup_code
+
+
+def get_oauth_lookup_user_id(oauth_user):
+    return oauth_user.get('sub') or oauth_user.get('email') or oauth_user.get('nickname') or 'unknown'
+
+
+def get_or_create_bio_lookup_code(identifier):
+    lookup_code = OAuthLookupCode.objects.filter(identification_code=identifier.upper()).first()
+    if lookup_code:
+        return lookup_code
+    lookup_code, _ = OAuthLookupCode.objects.get_or_create(
+        sr_user_id=identifier,
+        defaults={'nickname': identifier},
+    )
+    return lookup_code
+
+
+def get_bio_profile(lookup_code, user=None):
+    django_user = user if getattr(user, 'is_authenticated', False) else None
+    bio_profile, created = BioProfile.objects.get_or_create(
+        lookup_code=lookup_code,
+        defaults={
+            'sr_user_id': lookup_code.sr_user_id,
+            'user': django_user,
+        },
+    )
+    if not created and (bio_profile.sr_user_id != lookup_code.sr_user_id or (django_user and bio_profile.user_id != django_user.id)):
+        bio_profile.sr_user_id = lookup_code.sr_user_id
+        if django_user:
+            bio_profile.user = django_user
+        bio_profile.save()
+    return bio_profile
+
+
+def is_bio_owner(oauth_user, lookup_code):
+    return bool(oauth_user and get_oauth_lookup_user_id(oauth_user) == lookup_code.sr_user_id)
 
 
 def login_oauth_admin_user(request, oauth_user):

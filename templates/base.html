@@ -27,6 +27,7 @@
             document.documentElement.classList.add('dark')
         }
     </script>
+    {% block head_extra %}{% endblock %}
 </head>
 <body class="flex min-h-full flex-col bg-slate-50 text-slate-950 antialiased transition-colors dark:bg-slate-950 dark:text-white">
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-white/10 dark:bg-slate-950/85">
@@ -57,17 +58,19 @@
                 </button>
                 {% if oauth_user %}
                     <div class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
-                        {% if oauth_user.avatar %}
-                            <img src="{{ oauth_user.avatar }}" alt="{{ oauth_user.nickname }}" class="h-8 w-8 rounded-full object-cover">
-                        {% else %}
-                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-                                {{ oauth_user.nickname|first|default:'S' }}
+                        <a href="{% url 'core:bio' %}" class="flex min-w-0 items-center gap-3 rounded-md transition hover:text-primary dark:hover:text-primary-2">
+                            {% if oauth_user.avatar %}
+                                <img src="{{ oauth_user.avatar }}" alt="{{ oauth_user.nickname }}" class="h-8 w-8 rounded-full object-cover">
+                            {% else %}
+                                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                                    {{ oauth_user.nickname|first|default:'S' }}
+                                </div>
+                            {% endif %}
+                            <div class="hidden leading-tight sm:block">
+                                <div class="text-xs text-slate-500 dark:text-slate-400">已登录</div>
+                                <div class="max-w-32 truncate text-sm font-medium text-slate-950 dark:text-white">{{ oauth_user.nickname }}</div>
                             </div>
-                        {% endif %}
-                        <div class="hidden leading-tight sm:block">
-                            <div class="text-xs text-slate-500 dark:text-slate-400">已登录</div>
-                            <div class="max-w-32 truncate text-sm font-medium text-slate-950 dark:text-white">{{ oauth_user.nickname }}</div>
-                        </div>
+                        </a>
                         <a href="{% url 'core:oauth_logout' %}" class="text-sm font-medium text-slate-500 transition hover:text-primary dark:text-slate-400 dark:hover:text-primary-2">
                             退出
                         </a>
