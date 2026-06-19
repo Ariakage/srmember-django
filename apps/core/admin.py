@@ -1,8 +1,7 @@
-from django import forms
 from django.contrib import admin
-from django.db import models
 from django.utils.html import format_html
 
+from .forms import BioProfileAdminForm
 from .models import BioProfile, OAuthLookupCode, SiteSetting
 
 
@@ -65,7 +64,7 @@ class SiteSettingAdmin(admin.ModelAdmin):
 
 @admin.register(BioProfile)
 class BioProfileAdmin(admin.ModelAdmin):
-    change_form_template = 'admin/core/bioprofile/change_form.html'
+    form = BioProfileAdminForm
     list_display = ('avatar_preview', 'nickname', 'identification_code', 'sr_user_id', 'updated_at')
     list_select_related = ('lookup_code', 'user')
     search_fields = ('lookup_code__identification_code', 'lookup_code__nickname', 'lookup_code__email', 'sr_user_id')
@@ -81,16 +80,14 @@ class BioProfileAdmin(admin.ModelAdmin):
         'updated_at',
     )
     ordering = ('-updated_at',)
-    formfield_overrides = {
-        models.TextField: {
-            'widget': forms.Textarea(
-                attrs={
-                    'class': 'vLargeTextField sr-admin-markdown-source',
-                    'rows': 24,
-                },
-            ),
-        },
-    }
+
+    class Media:
+        css = {'all': ('core/css/markdown.css', 'admin/css/bio_admin.css')}
+        js = (
+            'core/js/mathjax_config.js',
+            'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js',
+            'core/js/markdown_tools.js',
+        )
 
     @admin.display(description='头像')
     def avatar_preview(self, obj):

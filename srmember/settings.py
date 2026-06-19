@@ -64,7 +64,11 @@ PROJECT_APPS = [
     'apps.core.apps.CoreConfig',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + PROJECT_APPS
+THIRD_PARTY_APPS = [
+    'martor',
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -155,3 +159,33 @@ OAUTH_SERVER_METADATA_URL = os.environ.get(
 )
 OAUTH_SCOPE = os.environ.get('OAUTH_SCOPE', 'openid profile email')
 OAUTH_TOKEN_ENDPOINT_AUTH_METHOD = os.environ.get('OAUTH_TOKEN_ENDPOINT_AUTH_METHOD', 'client_secret_post')
+
+MARTOR_THEME = 'tailwind'
+MARTOR_ENABLE_CONFIGS = {
+    'emoji': 'true',
+    'imgur': 'false',
+    'mention': 'false',
+    'jquery': 'true',
+    'living': 'true',
+    'spellcheck': 'false',
+    'hljs': 'true',
+}
+MARTOR_TOOLBAR_BUTTONS = [
+    'bold',
+    'italic',
+    'horizontal',
+    'heading',
+    'pre-code',
+    'blockquote',
+    'unordered-list',
+    'ordered-list',
+    'link',
+    'image-link',
+    'emoji',
+    'toggle-maximize',
+    'help',
+]
+MARTOR_MARKDOWNIFY_FUNCTION = 'apps.core.markdown.render_markdown'
+MARTOR_MARKDOWNIFY_TIMEOUT = 350
+MARTOR_UPLOAD_URL = ''
+MARTOR_SEARCH_USERS_URL = ''

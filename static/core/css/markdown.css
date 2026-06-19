@@ -1,9 +1,70 @@
 .sr-markdown-shell {
-    color: #0f172a;
+    --sr-md-text: #0f172a;
+    --sr-md-muted: #475569;
+    --sr-md-border: #dbe3ef;
+    --sr-md-soft-border: #e2e8f0;
+    --sr-md-surface: #ffffff;
+    --sr-md-soft-surface: #f8fafc;
+    --sr-md-inline-code-bg: #eef2ff;
+    --sr-md-inline-code-text: #4f46e5;
+    --sr-md-code-shell: #ffffff;
+    --sr-md-code-bg: #f8fafc;
+    --sr-md-code-line: #e0e7ff;
+    --sr-md-code-text: #1e293b;
+    --sr-md-token-comment: #64748b;
+    --sr-md-token-keyword: #6d28d9;
+    --sr-md-token-string: #047857;
+    --sr-md-token-number: #b45309;
+    --sr-md-token-name: #0369a1;
+    --sr-md-token-operator: #334155;
+    color: var(--sr-md-text);
 }
 
-.dark .sr-markdown-shell {
-    color: #f8fafc;
+.dark .sr-markdown-shell,
+html[data-theme="dark"] .sr-markdown-shell {
+    --sr-md-text: #f8fafc;
+    --sr-md-muted: #cbd5e1;
+    --sr-md-border: rgba(148, 163, 184, 0.28);
+    --sr-md-soft-border: rgba(148, 163, 184, 0.18);
+    --sr-md-surface: #050816;
+    --sr-md-soft-surface: #0b1020;
+    --sr-md-inline-code-bg: rgba(124, 108, 255, 0.18);
+    --sr-md-inline-code-text: #ddd6fe;
+    --sr-md-code-shell: #050816;
+    --sr-md-code-bg: #0b1020;
+    --sr-md-code-line: rgba(124, 108, 255, 0.22);
+    --sr-md-code-text: #e5e7eb;
+    --sr-md-token-comment: #94a3b8;
+    --sr-md-token-keyword: #c4b5fd;
+    --sr-md-token-string: #86efac;
+    --sr-md-token-number: #fbbf24;
+    --sr-md-token-name: #7dd3fc;
+    --sr-md-token-operator: #e5e7eb;
+    color: var(--sr-md-text);
+}
+
+@media (prefers-color-scheme: dark) {
+    html[data-theme="auto"] .sr-markdown-shell {
+        --sr-md-text: #f8fafc;
+        --sr-md-muted: #cbd5e1;
+        --sr-md-border: rgba(148, 163, 184, 0.28);
+        --sr-md-soft-border: rgba(148, 163, 184, 0.18);
+        --sr-md-surface: #050816;
+        --sr-md-soft-surface: #0b1020;
+        --sr-md-inline-code-bg: rgba(124, 108, 255, 0.18);
+        --sr-md-inline-code-text: #ddd6fe;
+        --sr-md-code-shell: #050816;
+        --sr-md-code-bg: #0b1020;
+        --sr-md-code-line: rgba(124, 108, 255, 0.22);
+        --sr-md-code-text: #e5e7eb;
+        --sr-md-token-comment: #94a3b8;
+        --sr-md-token-keyword: #c4b5fd;
+        --sr-md-token-string: #86efac;
+        --sr-md-token-number: #fbbf24;
+        --sr-md-token-name: #7dd3fc;
+        --sr-md-token-operator: #e5e7eb;
+        color: var(--sr-md-text);
+    }
 }
 
 .sr-markdown-body {
@@ -71,7 +132,7 @@
 .sr-markdown-body td,
 .sr-markdown-body th,
 .sr-markdown-body dd {
-    color: #334155;
+    color: var(--sr-md-muted);
 }
 
 .dark .sr-markdown-body p,
@@ -79,7 +140,7 @@
 .dark .sr-markdown-body td,
 .dark .sr-markdown-body th,
 .dark .sr-markdown-body dd {
-    color: #cbd5e1;
+    color: var(--sr-md-muted);
 }
 
 .sr-markdown-body ul,
@@ -147,50 +208,58 @@
 }
 
 .sr-markdown-body table {
+    background: var(--sr-md-surface);
     border-collapse: collapse;
     display: block;
     overflow-x: auto;
     width: 100%;
 }
 
+.sr-markdown-body tbody,
+.sr-markdown-body tr {
+    background: var(--sr-md-surface);
+}
+
 .sr-markdown-body th,
 .sr-markdown-body td {
-    border: 1px solid #dbe3ef;
+    background: var(--sr-md-surface);
+    border: 1px solid var(--sr-md-border);
     padding: 0.7rem 0.85rem;
     text-align: left;
 }
 
 .dark .sr-markdown-body th,
 .dark .sr-markdown-body td {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--sr-md-border);
 }
 
 .sr-markdown-body th {
-    background: #f8fafc;
-    color: #0f172a;
+    background: var(--sr-md-soft-surface);
+    color: var(--sr-md-text);
     font-weight: 700;
 }
 
 .dark .sr-markdown-body th {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: var(--sr-md-soft-surface);
+    color: var(--sr-md-text);
 }
 
 .sr-markdown-body :not(pre) > code {
-    background: #eef2ff;
+    background: var(--sr-md-inline-code-bg);
     border-radius: 0.35rem;
-    color: #4f46e5;
+    color: var(--sr-md-inline-code-text);
     font-size: 0.9em;
     padding: 0.15rem 0.35rem;
 }
 
 .dark .sr-markdown-body :not(pre) > code {
-    background: rgba(124, 108, 255, 0.18);
-    color: #c4b5fd;
+    background: var(--sr-md-inline-code-bg);
+    color: var(--sr-md-inline-code-text);
 }
 
 .sr-code-wrap {
-    border: 1px solid #dbe3ef;
+    background: var(--sr-md-code-shell);
+    border: 1px solid var(--sr-md-border);
     border-radius: 0.6rem;
     margin-top: 1rem;
     overflow: hidden;
@@ -198,12 +267,23 @@
 }
 
 .dark .sr-code-wrap {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--sr-md-border);
+}
+
+.sr-markdown-body .highlight,
+.sr-markdown-body pre,
+.sr-markdown-body pre code,
+.sr-markdown-body .highlight pre,
+.sr-markdown-body .highlight code {
+    background: var(--sr-md-code-bg);
+    color: var(--sr-md-code-text);
+}
+
+.sr-markdown-body .highlight {
+    margin: 0;
 }
 
 .sr-markdown-body pre {
-    background: #0f172a;
-    color: #e2e8f0;
     font-size: 0.9rem;
     line-height: 1.65;
     margin: 0;
@@ -235,41 +315,50 @@
 }
 
 .sr-markdown-body .highlight .hll {
-    background-color: #1e293b;
+    background-color: var(--sr-md-code-line);
 }
 
 .sr-markdown-body .highlight .c,
 .sr-markdown-body .highlight .c1,
 .sr-markdown-body .highlight .cm,
 .sr-markdown-body .highlight .cp {
-    color: #94a3b8;
+    color: var(--sr-md-token-comment);
 }
 
 .sr-markdown-body .highlight .k,
 .sr-markdown-body .highlight .kd,
 .sr-markdown-body .highlight .kn,
 .sr-markdown-body .highlight .nt {
-    color: #c4b5fd;
+    color: var(--sr-md-token-keyword);
 }
 
 .sr-markdown-body .highlight .s,
 .sr-markdown-body .highlight .s1,
-.sr-markdown-body .highlight .s2,
+.sr-markdown-body .highlight .s2 {
+    color: var(--sr-md-token-string);
+}
+
 .sr-markdown-body .highlight .mi,
 .sr-markdown-body .highlight .mf {
-    color: #86efac;
+    color: var(--sr-md-token-number);
 }
 
 .sr-markdown-body .highlight .na,
+.sr-markdown-body .highlight .n,
 .sr-markdown-body .highlight .nb,
 .sr-markdown-body .highlight .nc,
-.sr-markdown-body .highlight .nf {
-    color: #7dd3fc;
+.sr-markdown-body .highlight .nf,
+.sr-markdown-body .highlight .nn,
+.sr-markdown-body .highlight .nx,
+.sr-markdown-body .highlight .vc,
+.sr-markdown-body .highlight .vg,
+.sr-markdown-body .highlight .vi {
+    color: var(--sr-md-token-name);
 }
 
 .sr-markdown-body .highlight .o,
 .sr-markdown-body .highlight .p {
-    color: #e2e8f0;
+    color: var(--sr-md-token-operator);
 }
 
 .sr-markdown-body .admonition {

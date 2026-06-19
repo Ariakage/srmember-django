@@ -1,0 +1,225 @@
+.sr-bio-editor {
+    --sr-martor-bg: #ffffff;
+    --sr-martor-panel: #f8fafc;
+    --sr-martor-panel-strong: #eef2ff;
+    --sr-martor-text: #0f172a;
+    --sr-martor-muted: #64748b;
+    --sr-martor-border: #dbe3ef;
+    --sr-martor-active: #7c6cff;
+    --sr-martor-code-bg: #ffffff;
+    --sr-martor-code-line: #f1f5f9;
+    --sr-martor-code-gutter: #f8fafc;
+    --sr-martor-code-gutter-text: #94a3b8;
+}
+
+.sr-bio-editor .main-martor {
+    width: 100%;
+}
+
+.sr-bio-editor .section-martor {
+    background: var(--sr-martor-bg);
+    border: 1px solid var(--sr-martor-border);
+    border-radius: 0.6rem;
+    color: var(--sr-martor-text);
+    overflow: hidden;
+}
+
+.sr-bio-editor .tab-martor-menu {
+    background: var(--sr-martor-panel);
+    border-color: var(--sr-martor-border);
+}
+
+.sr-bio-editor .tab-martor-menu button,
+.sr-bio-editor .tab-martor-menu span,
+.sr-bio-editor .martor-toolbar button {
+    color: var(--sr-martor-muted);
+}
+
+.sr-bio-editor .tab-martor-menu button[aria-selected="true"],
+.sr-bio-editor .tab-martor-menu button:hover,
+.sr-bio-editor .martor-toolbar button:hover {
+    color: var(--sr-martor-text);
+}
+
+.sr-bio-editor .tab-martor-menu button[aria-selected="true"],
+.sr-bio-editor [class*="tab-editor-"].border-b-2,
+.sr-bio-editor [class*="tab-preview-"].border-b-2 {
+    border-color: var(--sr-martor-active);
+}
+
+.sr-bio-editor .martor-toolbar .dropdown-menu {
+    background: var(--sr-martor-bg);
+    border-color: var(--sr-martor-border);
+}
+
+.sr-bio-editor .martor-toolbar .dropdown-menu button {
+    color: var(--sr-martor-text);
+}
+
+.sr-bio-editor .martor-toolbar .dropdown-menu button:hover {
+    background: var(--sr-martor-panel-strong);
+}
+
+.sr-bio-editor .martor-field,
+.sr-bio-editor .ace_editor,
+.sr-bio-editor .martor-preview {
+    min-height: 32rem;
+}
+
+.sr-bio-editor .ace_editor,
+.sr-bio-editor .ace_scroller,
+.sr-bio-editor .ace_content {
+    background: var(--sr-martor-code-bg);
+    color: var(--sr-martor-text);
+}
+
+.sr-bio-editor .ace_gutter {
+    background: var(--sr-martor-code-gutter);
+    color: var(--sr-martor-code-gutter-text);
+}
+
+.sr-bio-editor .ace_gutter-active-line,
+.sr-bio-editor .ace_marker-layer .ace_active-line {
+    background: var(--sr-martor-code-line);
+}
+
+.sr-bio-editor .ace_cursor {
+    color: var(--sr-martor-active);
+}
+
+.sr-bio-editor .ace_print-margin {
+    background: transparent;
+}
+
+.sr-bio-editor .ace-tm .ace_heading,
+.sr-bio-editor .ace-tm .ace_markup {
+    color: var(--sr-martor-active);
+}
+
+.sr-bio-editor .martor-preview {
+    background: var(--sr-martor-code-bg);
+    border-color: var(--sr-martor-border);
+    color: var(--sr-martor-text);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-shell {
+    --sr-md-text: #0f172a;
+    --sr-md-muted: #475569;
+    --sr-md-border: #dbe3ef;
+    --sr-md-soft-border: #e2e8f0;
+    --sr-md-surface: #ffffff;
+    --sr-md-soft-surface: #f8fafc;
+    --sr-md-inline-code-bg: #eef2ff;
+    --sr-md-inline-code-text: #4f46e5;
+    --sr-md-code-shell: #ffffff;
+    --sr-md-code-bg: #f8fafc;
+    --sr-md-code-line: #e0e7ff;
+    --sr-md-code-text: #1e293b;
+    --sr-md-token-comment: #64748b;
+    --sr-md-token-keyword: #6d28d9;
+    --sr-md-token-string: #047857;
+    --sr-md-token-number: #b45309;
+    --sr-md-token-name: #0369a1;
+    --sr-md-token-operator: #334155;
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body {
+    background: var(--sr-md-surface);
+    color: var(--sr-md-text);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body h1,
+.sr-bio-editor .martor-preview.sr-markdown-body h2,
+.sr-bio-editor .martor-preview.sr-markdown-body h3,
+.sr-bio-editor .martor-preview.sr-markdown-body h4,
+.sr-bio-editor .martor-preview.sr-markdown-body h5,
+.sr-bio-editor .martor-preview.sr-markdown-body h6,
+.sr-bio-editor .martor-preview.sr-markdown-body summary,
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition-title {
+    color: var(--sr-md-text);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body h2 {
+    border-color: var(--sr-md-soft-border);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body p,
+.sr-bio-editor .martor-preview.sr-markdown-body li,
+.sr-bio-editor .martor-preview.sr-markdown-body td,
+.sr-bio-editor .martor-preview.sr-markdown-body th,
+.sr-bio-editor .martor-preview.sr-markdown-body dd {
+    color: var(--sr-md-muted);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body th {
+    color: var(--sr-md-text);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition {
+    background: var(--sr-md-soft-surface);
+    border: 1px solid var(--sr-md-border);
+    border-left: 5px solid var(--sr-martor-active);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition.tip,
+.sr-bio-editor .martor-preview.sr-markdown-body details.tip {
+    border-left-color: #14b8a6;
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition.warning,
+.sr-bio-editor .martor-preview.sr-markdown-body details.warning {
+    border-left-color: #f59e0b;
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition.danger,
+.sr-bio-editor .martor-preview.sr-markdown-body .admonition.caution,
+.sr-bio-editor .martor-preview.sr-markdown-body details.caution {
+    border-left-color: #ef4444;
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body details {
+    background: var(--sr-md-surface);
+    border-color: var(--sr-md-border);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body details.note,
+.sr-bio-editor .martor-preview.sr-markdown-body details.important {
+    border-left-color: var(--sr-martor-active);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .tabbed-set,
+.sr-bio-editor .martor-preview.sr-markdown-body .sr-code-wrap {
+    border-color: var(--sr-md-border);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body .tabbed-labels,
+.sr-bio-editor .martor-preview.sr-markdown-body th {
+    background: var(--sr-md-soft-surface);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body mark {
+    background: #fef3c7;
+    color: var(--sr-md-text);
+}
+
+.sr-bio-editor .martor-preview.sr-markdown-body kbd {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: var(--sr-md-text);
+}
+
+.sr-bio-editor .martor-preview-stale {
+    opacity: 0.72;
+}
+
+.sr-bio-editor .modal-help-guide,
+.sr-bio-editor .modal-emoji {
+    z-index: 70;
+}
+
+@media (max-width: 640px) {
+    .sr-bio-editor .martor-toolbar {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+}

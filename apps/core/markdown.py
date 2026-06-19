@@ -153,7 +153,7 @@ ALLOWED_PROTOCOLS = ['data', 'http', 'https', 'mailto']
 
 def render_markdown(source):
     html = markdown_lib.markdown(
-        source or '',
+        normalize_markdown_source(source),
         extensions=MARKDOWN_EXTENSIONS,
         extension_configs=MARKDOWN_EXTENSION_CONFIGS,
         output_format='html',
@@ -166,3 +166,18 @@ def render_markdown(source):
         css_sanitizer=CSSSanitizer(allowed_css_properties=ALLOWED_CSS_PROPERTIES),
         strip=True,
     )
+
+
+def normalize_markdown_source(source):
+    lines = []
+    for line in (source or '').splitlines():
+        stripped = line.strip()
+        if stripped == "'''":
+            lines.append(f'{line[:len(line) - len(line.lstrip())]}```')
+            continue
+        if stripped.startswith("'''") and set(stripped[3:]) != {"'"}:
+            language = stripped[3:].strip()
+            lines.append(f'{line[:len(line) - len(line.lstrip())]}```{language}')
+            continue
+        lines.append(line)
+    return '\n'.join(lines)

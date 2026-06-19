@@ -2,15 +2,6 @@
     const copiedText = '已复制'
     const copyText = '复制'
 
-    function getCsrfToken() {
-        const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]')
-        if (csrfInput) {
-            return csrfInput.value
-        }
-        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='))
-        return cookie ? decodeURIComponent(cookie.split('=')[1]) : ''
-    }
-
     function copyToClipboard(text) {
         if (navigator.clipboard && window.isSecureContext) {
             return navigator.clipboard.writeText(text)
@@ -62,162 +53,53 @@
         window.MathJax.typesetPromise(root ? [root] : undefined)
     }
 
-    function postPreview(endpoint, markdown) {
-        const body = new FormData()
-        body.append('markdown', markdown)
-        return fetch(endpoint, {
-            body,
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': getCsrfToken(),
-            },
-            method: 'POST',
-        }).then((response) => response.json())
+    function normalizePreviewRoot(root) {
+        if (!root) {
+            return null
+        }
+        if (root.jquery) {
+            return root[0] || null
+        }
+        return root
     }
 
-    function syncPreview(textarea, preview, endpoint) {
-        if (!textarea || !preview || !endpoint) {
-            return Promise.resolve()
+    function prepareMarkdownBody(root) {
+        const scope = normalizePreviewRoot(root) || document
+        if (scope.classList && scope.classList.contains('martor-preview')) {
+            scope.classList.add('sr-markdown-shell', 'sr-markdown-body')
         }
-        preview.dataset.srRendering = 'true'
-        return postPreview(endpoint, textarea.value).then((data) => {
-            preview.innerHTML = data.html || ''
-            preview.dataset.srRendering = 'false'
-            enhanceCodeBlocks(preview)
-            typesetMath(preview)
+        scope.querySelectorAll('.martor-preview').forEach((preview) => {
+            preview.classList.add('sr-markdown-shell', 'sr-markdown-body')
         })
+        enhanceCodeBlocks(scope)
+        typesetMath(scope)
     }
 
-    function bindEditor(options) {
-        const root = options.root || document
-        const query = (target) => (typeof target === 'string' ? root.querySelector(target) : target)
-        const queryAll = (target) => (typeof target === 'string' ? Array.from(root.querySelectorAll(target)) : Array.from(target || []))
-        const textarea = query(options.textarea)
-        const preview = query(options.preview)
-        const codePanel = query(options.codePanel)
-        const visualPanel = query(options.visualPanel)
-        const tabs = queryAll(options.tabs)
-        const endpoint = options.endpoint
-        let timer = null
-        let renderVersion = 0
-
-        if (!textarea || !preview || !codePanel || !visualPanel || !tabs.length) {
-            return
+    function bindMartorPreviewEvents() {
+        if (document.documentElement.dataset.srMartorPreviewReady === 'true') {
+            return true
         }
-
-        function renderPreview() {
-            const currentVersion = renderVersion + 1
-            renderVersion = currentVersion
-            preview.dataset.srRendering = 'true'
-            return postPreview(endpoint, textarea.value).then((data) => {
-                if (currentVersion !== renderVersion) {
-                    return
-                }
-                preview.innerHTML = data.html || ''
-                preview.dataset.srRendering = 'false'
-                enhanceCodeBlocks(preview)
-                typesetMath(preview)
-            }).catch(() => {
-                if (currentVersion === renderVersion) {
-                    preview.dataset.srRendering = 'false'
-                }
-            })
+        const jq = window.jQuery || (window.django && window.django.jQuery)
+        if (!jq) {
+            return false
         }
-
-        function queuePreview(delay) {
-            window.clearTimeout(timer)
-            timer = window.setTimeout(() => {
-                renderPreview()
-            }, delay ?? 120)
-        }
-
-        function setMode(mode) {
-            const visualMode = mode === 'visual'
-            if (!visualMode && document.activeElement === preview) {
-                textarea.value = preview.innerText.trim()
-            }
-            codePanel.hidden = visualMode
-            visualPanel.hidden = !visualMode
-            tabs.forEach((tab) => {
-                const active = tab.dataset.mode === mode
-                tab.setAttribute('aria-pressed', String(active))
-            })
-            if (visualMode) {
-                renderPreview()
-            }
-        }
-
-        tabs.forEach((tab) => {
-            tab.addEventListener('click', () => setMode(tab.dataset.mode))
+        document.documentElement.dataset.srMartorPreviewReady = 'true'
+        jq(document).on('martor:preview', (event, preview) => {
+            prepareMarkdownBody(preview)
         })
-        textarea.addEventListener('input', () => queuePreview())
-        preview.addEventListener('input', () => {
-            if (preview.dataset.srRendering !== 'true') {
-                textarea.value = preview.innerText.trimEnd()
-                queuePreview(220)
-            }
-        })
-        enhanceCodeBlocks(preview)
-        typesetMath(preview)
-        setMode(options.initialMode || 'code')
-    }
-
-    function bindAdminEditor(options) {
-        const textarea = document.querySelector(options.textarea || '#id_markdown')
-        if (!textarea || textarea.dataset.srAdminReady === 'true') {
-            return
-        }
-        textarea.dataset.srAdminReady = 'true'
-
-        const shell = document.createElement('div')
-        shell.className = 'sr-admin-markdown-editor'
-
-        const controls = document.createElement('div')
-        controls.className = 'sr-admin-editor-controls'
-        controls.innerHTML = [
-            '<button type="button" class="sr-editor-tab" data-mode="visual" aria-pressed="false">所见即所得</button>',
-            '<button type="button" class="sr-editor-tab" data-mode="code" aria-pressed="true">代码模式</button>',
-        ].join('')
-
-        const codePanel = document.createElement('div')
-        codePanel.className = 'sr-editor-panel sr-admin-code-panel'
-        textarea.parentNode.insertBefore(shell, textarea)
-        shell.appendChild(controls)
-        shell.appendChild(codePanel)
-        codePanel.appendChild(textarea)
-
-        const visualPanel = document.createElement('div')
-        visualPanel.className = 'sr-editor-panel sr-admin-visual-panel'
-        visualPanel.hidden = true
-
-        const preview = document.createElement('div')
-        preview.className = 'sr-markdown-shell sr-markdown-body sr-visual-editor sr-admin-preview'
-        preview.contentEditable = 'true'
-        visualPanel.appendChild(preview)
-        shell.appendChild(visualPanel)
-
-        bindEditor({
-            codePanel: '.sr-admin-code-panel',
-            endpoint: options.endpoint,
-            initialMode: 'code',
-            preview: '.sr-admin-preview',
-            root: shell,
-            tabs: '.sr-admin-editor-controls .sr-editor-tab',
-            textarea: '#id_markdown',
-            visualPanel: '.sr-admin-visual-panel',
-        })
+        return true
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        enhanceCodeBlocks(document)
-        typesetMath(document.body)
+        prepareMarkdownBody(document)
+        if (!bindMartorPreviewEvents()) {
+            window.setTimeout(bindMartorPreviewEvents, 300)
+        }
     })
 
     window.SRMarkdown = {
-        bindAdminEditor,
-        bindEditor,
         enhanceCodeBlocks,
-        syncPreview,
+        prepareMarkdownBody,
         typesetMath,
     }
 }())

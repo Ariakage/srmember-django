@@ -1,7 +1,9 @@
 import base64
 import json
+from pathlib import Path
 from unittest.mock import Mock, patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import TestCase
@@ -20,6 +22,9 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '登录')
         self.assertContains(response, '/static/images/logo.png')
         self.assertContains(response, '/favicon.ico')
+        self.assertContains(response, 'document.startViewTransition')
+        self.assertContains(response, '@keyframes sr-theme-reveal')
+        self.assertContains(response, 'animateThemeButton')
 
     def test_home_shows_logged_in_user(self):
         session = self.client.session
@@ -364,8 +369,38 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'class="arithmatex"')
         self.assertContains(response, '😄')
 
+    def test_bio_edit_uses_martor_editor(self):
+        session = self.client.session
+        session[views.OAUTH_USER_SESSION_KEY] = {
+            'sub': 'martor-user',
+            'nickname': 'Martor User',
+            'is_admin': False,
+        }
+        session.save()
+
+        response = self.client.get('/bio/edit/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'martor/js/martor.tailwind')
+        self.assertContains(response, 'plugins/js/ace.js')
+        self.assertContains(response, 'data-markdownfy-url="/martor/markdownify/"')
+        self.assertContains(response, 'name="markdown"')
+        self.assertContains(response, 'core/css/martor.css')
+        self.assertContains(response, 'core/js/markdown_tools.js')
+        self.assertContains(response, '<main class="flex-1 bg-slate-50 transition-colors dark:bg-slate-950">')
+        self.assertNotContains(response, 'plugins/css/tailwind.min.css')
+        self.assertNotContains(response, 'plugins/js/tailwind.min.js')
+        self.assertNotContains(response, 'bindEditor')
+
     def test_bio_preview_renders_advanced_markdown(self):
-        markdown = '| A | B |\n| --- | --- |\n| 1 | 2 |\n\n- [x] Done\n\n$$x^2$$'
+        markdown = (
+            '| A | B |\n| --- | --- |\n| 1 | 2 |\n\n'
+            '- [x] Done\n\n'
+            '$$x^2$$\n\n'
+            '/// details | Folded\n    open: true\n\nBody\n///\n\n'
+            '/// tab | Python\n```python\nprint(1)\n```\n///\n\n'
+            '/// tab | JS\n```javascript\nconsole.log(1)\n```\n///'
+        )
 
         response = self.client.post('/bio/preview/', {'markdown': markdown}, HTTP_HOST='127.0.0.1')
 
@@ -374,6 +409,41 @@ class CoreViewTests(TestCase):
         self.assertIn('<table>', payload['html'])
         self.assertIn('task-list', payload['html'])
         self.assertIn('arithmatex', payload['html'])
+        self.assertIn('<details open>', payload['html'])
+        self.assertIn('class="tabbed-set tabbed-alternate"', payload['html'])
+
+        content_response = self.client.post('/bio/preview/', {'content': '> [!NOTE]\n> Content field'}, HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(content_response.status_code, 200)
+        self.assertIn('class="admonition note"', content_response.json()['html'])
+
+    def test_martor_markdownify_uses_project_renderer(self):
+        markdown = (
+            '> [!NOTE]\n> Alert body\n\n'
+            '- [x] Done\n\n'
+            '$$x^2$$\n\n'
+            ':smile:\n\n'
+            '/// details | Folded\n    open: true\n\nBody\n///\n\n'
+            '/// tab | Python\n```python\nprint(1)\n```\n///\n\n'
+            '/// tab | JS\n```javascript\nconsole.log(1)\n```\n///'
+        )
+
+        response = self.client.post('/martor/markdownify/', {'content': markdown}, HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="admonition note"')
+        self.assertContains(response, 'task-list')
+        self.assertContains(response, 'arithmatex')
+        self.assertContains(response, '😄')
+        self.assertContains(response, '<details open>')
+        self.assertContains(response, 'class="tabbed-set tabbed-alternate"')
+
+    def test_markdown_normalizes_triple_single_quote_fences(self):
+        html = render_markdown("'''python\nprint(1)\n'''")
+
+        self.assertIn('class="language-python highlight"', html)
+        self.assertIn('print', html)
+        self.assertNotIn("'''", html)
 
     def test_markdown_github_alerts_ignore_fenced_code_examples(self):
         html = render_markdown('> [!NOTE]\n> Alert body\n\n```markdown\n> [!NOTE]\n> Literal body\n```')
@@ -656,7 +726,7 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'Bio 后台用户')
         self.assertContains(response, 'https://example.com/admin-bio.png')
 
-    def test_admin_bio_profile_change_form_has_markdown_modes(self):
+    def test_admin_bio_profile_change_form_has_martor_editor(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
         lookup_code = OAuthLookupCode.objects.create(
             sr_user_id='admin-editor-user',
@@ -668,10 +738,34 @@ class CoreViewTests(TestCase):
         response = self.client.get(f'/admin/core/bioprofile/{bio_profile.pk}/change/', HTTP_HOST='127.0.0.1')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'bindAdminEditor')
-        self.assertContains(response, '/bio/preview/')
-        self.assertContains(response, 'core/js/markdown_tools.js')
+        self.assertContains(response, 'martor/js/martor.tailwind')
+        self.assertContains(response, 'plugins/js/ace.js')
+        self.assertContains(response, 'data-markdownfy-url="/martor/markdownify/"')
         self.assertContains(response, 'admin/css/bio_admin.css')
-        self.assertContains(response, 'sr-admin-markdown-source')
+        self.assertContains(response, 'core/js/markdown_tools.js')
         self.assertContains(response, '# Admin Title')
+        self.assertNotContains(response, 'bindAdminEditor')
+        self.assertNotContains(response, 'sr-admin-markdown-source')
         self.assertNotContains(response, '渲染预览')
+
+    def test_martor_styles_define_light_and_dark_editor_colors(self):
+        frontend_css = Path(settings.BASE_DIR / 'static/core/css/martor.css').read_text()
+        markdown_css = Path(settings.BASE_DIR / 'static/core/css/markdown.css').read_text()
+        admin_css = Path(settings.BASE_DIR / 'static/admin/css/bio_admin.css').read_text()
+
+        self.assertIn('--sr-martor-bg: #ffffff;', frontend_css)
+        self.assertNotIn('.dark .sr-bio-editor', frontend_css)
+        self.assertIn('--sr-martor-code-bg: #ffffff;', frontend_css)
+        self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-shell', frontend_css)
+        self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-body .admonition', frontend_css)
+        self.assertIn('.sr-bio-editor .martor-preview.sr-markdown-body details', frontend_css)
+        self.assertIn('.sr-bio-editor .ace_editor', frontend_css)
+        self.assertIn('--sr-md-code-bg: #0b1020;', markdown_css)
+        self.assertIn('.sr-markdown-body .highlight .nx', markdown_css)
+        self.assertIn('--sr-admin-martor-bg: #ffffff;', admin_css)
+        self.assertNotIn('html[data-theme="dark"] .model-bioprofile', admin_css)
+        self.assertIn('--sr-admin-martor-code-bg: #ffffff;', admin_css)
+        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-shell', admin_css)
+        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-body .admonition', admin_css)
+        self.assertIn('.model-bioprofile .martor-preview.sr-markdown-body details', admin_css)
+        self.assertIn('.model-bioprofile .ace_editor', admin_css)

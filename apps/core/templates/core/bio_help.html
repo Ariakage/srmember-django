@@ -5,18 +5,7 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{% static 'core/css/markdown.css' %}">
-<script>
-    window.MathJax = {
-        options: {
-            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
-        },
-        tex: {
-            displayMath: [['\\[', '\\]'], ['$$', '$$']],
-            inlineMath: [['\\(', '\\)'], ['$', '$']],
-            processEscapes: true
-        }
-    }
-</script>
+<script defer src="{% static 'core/js/mathjax_config.js' %}"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script defer src="{% static 'core/js/markdown_tools.js' %}"></script>
 {% endblock %}

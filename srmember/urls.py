@@ -26,6 +26,7 @@ admin.site.index_title = '团队内部成员系统管理'
 
 urlpatterns = [
     path('', include('apps.core.urls')),
+    path('martor/', include('martor.urls')),
     path('admin/login/', core_views.admin_oauth_login, name='admin_oauth_login'),
     path('admin/', admin.site.urls),
 ]

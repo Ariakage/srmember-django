@@ -18,6 +18,7 @@ from django.utils.safestring import mark_safe
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from .forms import BioProfileForm
 from .markdown import render_markdown
 from .models import BioProfile, OAuthLookupCode, SiteSetting
 from .oauth import oauth
@@ -49,10 +50,16 @@ BIO_HELP_MARKDOWN = """# SRMember Bio Markdown 指南
 
 ## SuperFences + Highlight
 
+代码块请使用三个反引号或三个波浪线包裹：
+
 ```python hl_lines="2"
 def hello(name):
     return f"Hello, {name}"
 ```
+
+~~~javascript
+console.log("also works")
+~~~
 
 行内高亮：`#!python print("inline highlight")`
 
@@ -246,16 +253,19 @@ def bio_edit(request):
     bio_profile = get_bio_profile(lookup_code, request.user)
 
     if request.method == 'POST':
-        bio_profile.markdown = request.POST.get('markdown', '')
-        bio_profile.save()
-        return redirect('core:bio')
+        form = BioProfileForm(request.POST, instance=bio_profile)
+        if form.is_valid():
+            form.save()
+            return redirect('core:bio')
+    else:
+        form = BioProfileForm(instance=bio_profile)
 
     return render(
         request,
         'core/bio_edit.html',
         {
-            'bio_html': mark_safe(render_markdown(bio_profile.markdown)),
             'bio_profile': bio_profile,
+            'form': form,
             'lookup_code': lookup_code,
             'oauth_user': oauth_user,
             'site_setting': SiteSetting.load(),
@@ -265,7 +275,7 @@ def bio_edit(request):
 
 @require_POST
 def bio_preview(request):
-    return JsonResponse({'html': render_markdown(request.POST.get('markdown', ''))})
+    return JsonResponse({'html': render_markdown(request.POST.get('markdown') or request.POST.get('content', ''))})
 
 
 def bio_help(request):
@@ -294,7 +304,6 @@ def oauth_login(request):
 def oauth_callback(request):
     token = fetch_oauth_access_token(request)
     userinfo = resolve_oauth_userinfo(token)
-    print_oauth_payload('oauth resolved userinfo payload', userinfo)
     normalized_user = normalize_oauth_user(userinfo)
     sync_oauth_lookup_code(normalized_user)
     redirect_url = get_oauth_callback_redirect_url(request, normalized_user)
@@ -610,7 +619,6 @@ def fetch_userinfo(access_token):
     )
     response.raise_for_status()
     payload = response.json()
-    print_oauth_payload('oauth userinfo response payload', payload)
     if isinstance(payload, Mapping) and isinstance(payload.get('data'), Mapping):
         return payload['data']
     return payload
@@ -620,27 +628,3 @@ def decode_jwt_payload(token):
     payload = token.split('.')[1]
     payload += '=' * (-len(payload) % 4)
     return json.loads(base64.urlsafe_b64decode(payload))
-
-
-def print_oauth_payload(label, payload):
-    print(f'\n[{label}]')
-    print(json.dumps(mask_oauth_payload(payload), ensure_ascii=False, indent=2, default=str))
-
-
-def mask_oauth_payload(value):
-    if isinstance(value, Mapping):
-        return {
-            key: mask_oauth_value(key, item)
-            for key, item in value.items()
-        }
-    if isinstance(value, list):
-        return [mask_oauth_payload(item) for item in value]
-    if isinstance(value, tuple):
-        return [mask_oauth_payload(item) for item in value]
-    return value
-
-
-def mask_oauth_value(key, value):
-    if key in {'access_token', 'accessToken', 'refresh_token', 'refreshToken', 'id_token', 'idToken', 'token'}:
-        return f'<redacted:{len(str(value))} chars>'
-    return mask_oauth_payload(value)
