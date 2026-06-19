@@ -9,8 +9,9 @@ from django.http import HttpResponse
 from django.test import TestCase
 
 from . import views
+from .feishu import fetch_feishu_document_metadata, parse_feishu_doc_token
 from .markdown import render_markdown
-from .models import BioProfile, OAuthLookupCode
+from .models import BioProfile, FeishuDocument, FeishuDocumentSetting, MemberProfile, OAuthLookupCode, ShortcutLink
 
 
 class CoreViewTests(TestCase):
@@ -22,6 +23,17 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '登录')
         self.assertContains(response, '/static/images/logo.png')
         self.assertContains(response, '/favicon.ico')
+        self.assertContains(response, '首页')
+        self.assertContains(response, '成员')
+        self.assertContains(response, 'href="/members/"')
+        self.assertContains(response, '文档')
+        self.assertContains(response, 'href="/docs/"')
+        self.assertContains(response, 'Bio.')
+        self.assertContains(response, '快捷链接')
+        self.assertContains(response, 'href="/links/"')
+        self.assertContains(response, '服务器状态')
+        self.assertContains(response, 'https://status.srinternet.top/dashboard')
+        self.assertContains(response, 'target="_blank" rel="noopener noreferrer"')
         self.assertContains(response, 'document.startViewTransition')
         self.assertContains(response, '@keyframes sr-theme-reveal')
         self.assertContains(response, 'animateThemeButton')
@@ -43,6 +55,183 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'Ariakage')
         self.assertContains(response, 'https://example.com/avatar.png')
         self.assertContains(response, 'href="/bio/"')
+
+    def test_quick_links_page_shows_active_configured_links(self):
+        ShortcutLink.objects.create(
+            title='SR Studio',
+            url='https://sr-studio.cn/',
+            description='团队官网',
+            sort_order=2,
+        )
+        ShortcutLink.objects.create(
+            title='内部文档',
+            url='/docs/',
+            description='内部资料入口',
+            sort_order=1,
+            open_new_tab=False,
+        )
+        ShortcutLink.objects.create(
+            title='隐藏入口',
+            url='https://example.com/hidden',
+            is_active=False,
+        )
+
+        response = self.client.get('/links/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '团队快捷链接')
+        self.assertContains(response, '内部文档')
+        self.assertContains(response, 'href="/docs/"')
+        self.assertContains(response, 'SR Studio')
+        self.assertContains(response, 'href="https://sr-studio.cn/" target="_blank" rel="noopener noreferrer"')
+        self.assertNotContains(response, '隐藏入口')
+        content = response.content.decode()
+        self.assertLess(content.index('内部文档'), content.index('SR Studio'))
+
+    def test_quick_links_page_shows_empty_state(self):
+        response = self.client.get('/links/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '暂无快捷链接，请在后台添加。')
+
+    def test_documents_page_shows_configured_feishu_documents(self):
+        FeishuDocument.objects.create(
+            title='普通文档',
+            document_url='https://example.feishu.cn/docx/normal-token',
+            description='普通文档简介',
+            auto_cover='https://example.com/normal-cover.png',
+            sort_order=1,
+        )
+        FeishuDocument.objects.create(
+            title='置顶文档',
+            document_url='https://example.feishu.cn/docx/pinned-token',
+            description='置顶文档简介',
+            manual_cover='https://example.com/manual-cover.png',
+            is_pinned=True,
+            sort_order=99,
+            open_new_tab=False,
+        )
+        FeishuDocument.objects.create(
+            title='隐藏文档',
+            document_url='https://example.feishu.cn/docx/hidden-token',
+            is_active=False,
+        )
+
+        response = self.client.get('/docs/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '团队文档')
+        self.assertContains(response, '置顶文档')
+        self.assertContains(response, '置顶文档简介')
+        self.assertContains(response, '置顶')
+        self.assertNotContains(response, '[err]')
+        self.assertContains(response, 'border-purple-800 bg-purple-50')
+        self.assertContains(response, 'https://example.com/manual-cover.png')
+        self.assertContains(response, '普通文档')
+        self.assertContains(response, '普通文档简介')
+        self.assertContains(response, 'https://example.com/normal-cover.png')
+        self.assertContains(response, 'href="https://example.feishu.cn/docx/normal-token" target="_blank" rel="noopener noreferrer"')
+        self.assertNotContains(response, '隐藏文档')
+        content = response.content.decode()
+        self.assertLess(content.index('置顶文档'), content.index('普通文档'))
+
+    def test_documents_page_shows_empty_state(self):
+        response = self.client.get('/docs/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '暂无文档，请在后台添加。')
+
+    def test_feishu_guest_metadata_uses_open_graph_fields(self):
+        response = Mock()
+        response.text = (
+            '<html><head>'
+            '<meta property="og:title" content="飞书标题 - 飞书云文档">'
+            '<meta property="og:description" content="飞书简介">'
+            '<meta property="og:image" content="/cover.png">'
+            '</head></html>'
+        )
+        response.raise_for_status.return_value = None
+
+        with patch('apps.core.feishu.requests.get', return_value=response):
+            metadata = fetch_feishu_document_metadata('https://example.feishu.cn/docx/doc-token')
+
+        self.assertEqual(metadata['title'], '飞书标题')
+        self.assertEqual(metadata['description'], '飞书简介')
+        self.assertEqual(metadata['cover'], 'https://example.feishu.cn/cover.png')
+
+    def test_parse_feishu_doc_token_supports_docx_urls(self):
+        doc_token, doc_type = parse_feishu_doc_token('https://example.feishu.cn/docx/doc-token?from=from_copylink')
+
+        self.assertEqual(doc_token, 'doc-token')
+        self.assertEqual(doc_type, 'docx')
+
+    def test_members_page_shows_bound_and_manual_member_cards(self):
+        lookup_code = OAuthLookupCode.objects.create(
+            sr_user_id='member-bound-user',
+            nickname='OAuth 成员',
+            avatar='https://example.com/oauth-member.png',
+            email='oauth-member@example.com',
+        )
+        MemberProfile.objects.create(
+            lookup_code=lookup_code,
+            intro='绑定账号简介',
+            sort_order=2,
+        )
+        MemberProfile.objects.create(
+            nickname='手动成员',
+            avatar='https://example.com/manual-member.png',
+            intro='手动成员简介',
+            sort_order=1,
+        )
+        MemberProfile.objects.create(
+            nickname='隐藏成员',
+            intro='隐藏简介',
+            is_active=False,
+        )
+
+        response = self.client.get('/members/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '团队成员')
+        self.assertContains(response, '手动成员')
+        self.assertContains(response, 'https://example.com/manual-member.png')
+        self.assertContains(response, '手动成员简介')
+        self.assertContains(response, 'OAuth 成员')
+        self.assertContains(response, 'https://example.com/oauth-member.png')
+        self.assertContains(response, '绑定账号简介')
+        self.assertContains(response, lookup_code.identification_code)
+        self.assertContains(response, f'href="/bio/{lookup_code.identification_code}/"')
+        self.assertNotContains(response, '隐藏成员')
+        content = response.content.decode()
+        self.assertLess(content.index('手动成员'), content.index('OAuth 成员'))
+
+    def test_members_page_shows_manual_override_for_bound_account(self):
+        lookup_code = OAuthLookupCode.objects.create(
+            sr_user_id='member-override-user',
+            nickname='OAuth 原昵称',
+            avatar='https://example.com/original.png',
+        )
+        MemberProfile.objects.create(
+            lookup_code=lookup_code,
+            nickname='覆盖昵称',
+            avatar='https://example.com/override.png',
+            intro='覆盖信息',
+        )
+
+        response = self.client.get('/members/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '覆盖昵称')
+        self.assertContains(response, 'https://example.com/override.png')
+        self.assertContains(response, '覆盖信息')
+        self.assertNotContains(response, 'OAuth 原昵称')
+        self.assertNotContains(response, 'https://example.com/original.png')
+
+    def test_members_page_shows_empty_state(self):
+        response = self.client.get('/members/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '暂无成员资料，请在后台添加。')
 
     def test_favicon_route(self):
         response = self.client.get('/favicon.ico', HTTP_HOST='127.0.0.1')
@@ -725,6 +914,70 @@ class CoreViewTests(TestCase):
         self.assertContains(response, lookup_code.identification_code)
         self.assertContains(response, 'Bio 后台用户')
         self.assertContains(response, 'https://example.com/admin-bio.png')
+
+    def test_admin_shortcut_link_list_shows_configured_links(self):
+        user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
+        ShortcutLink.objects.create(
+            title='后台快捷链接',
+            url='https://example.com/admin-link',
+            description='后台配置说明',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/core/shortcutlink/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '后台快捷链接')
+        self.assertContains(response, 'https://example.com/admin-link')
+
+    def test_admin_feishu_document_list_shows_configured_documents(self):
+        user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
+        FeishuDocument.objects.create(
+            title='后台飞书文档',
+            document_url='https://example.feishu.cn/docx/admin-token',
+            description='后台文档说明',
+            manual_cover='https://example.com/admin-doc-cover.png',
+            is_pinned=True,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/core/feishudocument/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '后台飞书文档')
+        self.assertContains(response, 'https://example.feishu.cn/docx/admin-token')
+        self.assertContains(response, 'https://example.com/admin-doc-cover.png')
+
+    def test_admin_feishu_document_setting_allows_global_credentials(self):
+        user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
+        FeishuDocumentSetting.objects.create(app_id='global-app-id', app_key='global-app-key')
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/core/feishudocumentsetting/1/change/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'global-app-id')
+        self.assertContains(response, 'type="password"')
+
+    def test_admin_member_profile_list_shows_member_cards_data(self):
+        user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
+        lookup_code = OAuthLookupCode.objects.create(
+            sr_user_id='admin-member-user',
+            nickname='后台绑定成员',
+            avatar='https://example.com/admin-member.png',
+        )
+        MemberProfile.objects.create(lookup_code=lookup_code, intro='后台简介')
+        MemberProfile.objects.create(nickname='后台手动成员', avatar='https://example.com/manual-admin.png')
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/core/memberprofile/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '后台绑定成员')
+        self.assertContains(response, lookup_code.identification_code)
+        self.assertContains(response, 'https://example.com/admin-member.png')
+        self.assertContains(response, '后台手动成员')
+        self.assertContains(response, '手动成员')
 
     def test_admin_bio_profile_change_form_has_martor_editor(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)

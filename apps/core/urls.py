@@ -6,6 +6,9 @@ app_name = 'core'
 
 urlpatterns = [
     path('favicon.ico', views.favicon, name='favicon'),
+    path('members/', views.members, name='members'),
+    path('links/', views.quick_links, name='quick_links'),
+    path('docs/', views.documents, name='documents'),
     path('bio/help/', views.bio_help, name='bio_help'),
     path('bio/preview/', views.bio_preview, name='bio_preview'),
     path('bio/edit/', views.bio_edit, name='bio_edit'),

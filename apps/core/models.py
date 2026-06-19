@@ -90,6 +90,130 @@ class BioProfile(models.Model):
         super().save(*args, **kwargs)
 
 
+class ShortcutLink(models.Model):
+    title = models.CharField(max_length=80, verbose_name='标题')
+    url = models.CharField(max_length=500, verbose_name='链接')
+    description = models.CharField(max_length=180, blank=True, verbose_name='说明')
+    sort_order = models.PositiveIntegerField(default=0, verbose_name='排序')
+    is_active = models.BooleanField(default=True, verbose_name='启用')
+    open_new_tab = models.BooleanField(default=True, verbose_name='新窗口打开')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        ordering = ('sort_order', 'title')
+        verbose_name = '快捷链接'
+        verbose_name_plural = '快捷链接'
+
+    def __str__(self):
+        return self.title
+
+
+class FeishuDocumentSetting(models.Model):
+    app_id = models.CharField(max_length=120, blank=True, verbose_name='全局飞书 App ID')
+    app_key = models.CharField(max_length=240, blank=True, verbose_name='全局飞书 App Key')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        verbose_name = '飞书文档配置'
+        verbose_name_plural = '飞书文档配置'
+
+    def __str__(self):
+        return '飞书文档配置'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        setting, _ = cls.objects.get_or_create(pk=1)
+        return setting
+
+
+class FeishuDocument(models.Model):
+    title = models.CharField(max_length=120, blank=True, verbose_name='标题')
+    document_url = models.URLField(max_length=800, verbose_name='飞书文档链接')
+    description = models.CharField(max_length=240, blank=True, verbose_name='简介')
+    manual_cover = models.URLField(max_length=800, blank=True, verbose_name='手动头图')
+    auto_cover = models.URLField(max_length=800, blank=True, verbose_name='自动头图')
+    app_id = models.CharField(max_length=120, blank=True, verbose_name='单独飞书 App ID')
+    app_key = models.CharField(max_length=240, blank=True, verbose_name='单独飞书 App Key')
+    is_pinned = models.BooleanField(default=False, verbose_name='置顶')
+    sort_order = models.PositiveIntegerField(default=0, verbose_name='排序')
+    is_active = models.BooleanField(default=True, verbose_name='启用')
+    open_new_tab = models.BooleanField(default=True, verbose_name='新窗口打开')
+    last_synced_at = models.DateTimeField(null=True, blank=True, verbose_name='最近同步时间')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        ordering = ('-is_pinned', 'sort_order', 'title')
+        verbose_name = '飞书文档'
+        verbose_name_plural = '飞书文档'
+
+    def __str__(self):
+        return self.display_title
+
+    @property
+    def display_title(self):
+        return self.title or self.document_url
+
+    @property
+    def cover_url(self):
+        return self.manual_cover or self.auto_cover
+
+    def get_credentials(self):
+        if self.app_id and self.app_key:
+            return self.app_id, self.app_key
+        setting = FeishuDocumentSetting.load()
+        if setting.app_id and setting.app_key:
+            return setting.app_id, setting.app_key
+        return '', ''
+
+
+class MemberProfile(models.Model):
+    lookup_code = models.OneToOneField(
+        OAuthLookupCode,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='member_profile',
+        verbose_name='绑定 OAuth 账号',
+    )
+    nickname = models.CharField(max_length=150, blank=True, verbose_name='手动昵称')
+    avatar = models.URLField(max_length=500, blank=True, verbose_name='手动头像')
+    intro = models.TextField(blank=True, verbose_name='简介')
+    sort_order = models.PositiveIntegerField(default=0, verbose_name='排序')
+    is_active = models.BooleanField(default=True, verbose_name='启用')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        ordering = ('sort_order', 'nickname', 'id')
+        verbose_name = '成员资料'
+        verbose_name_plural = '成员资料'
+
+    def __str__(self):
+        return self.display_nickname
+
+    @property
+    def display_nickname(self):
+        return self.nickname or (self.lookup_code.nickname if self.lookup_code_id else '') or '未命名成员'
+
+    @property
+    def display_avatar(self):
+        return self.avatar or (self.lookup_code.avatar if self.lookup_code_id else '')
+
+    @property
+    def display_sr_user_id(self):
+        return self.lookup_code.sr_user_id if self.lookup_code_id else ''
+
+    @property
+    def display_lookup_code(self):
+        return self.lookup_code.identification_code if self.lookup_code_id else ''
+
+
 class SiteSetting(models.Model):
     footer_copyright = models.CharField(
         max_length=120,

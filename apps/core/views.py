@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import BioProfileForm
 from .markdown import render_markdown
-from .models import BioProfile, OAuthLookupCode, SiteSetting
+from .models import BioProfile, FeishuDocument, MemberProfile, OAuthLookupCode, ShortcutLink, SiteSetting
 from .oauth import oauth
 
 
@@ -190,18 +190,68 @@ Bio
 """
 
 
-def home(request):
-    nav_items = [
-        {'label': '首页', 'url': '/', 'active': True},
-        {'label': '成员', 'url': '#', 'active': False},
-        {'label': '公告', 'url': '#', 'active': False},
-        {'label': '文档', 'url': '#', 'active': False},
+def build_nav_items(active=''):
+    return [
+        {'label': '首页', 'url': reverse('core:home'), 'active': active == 'home'},
+        {'label': '成员', 'url': reverse('core:members'), 'active': active == 'members'},
+        {'label': '文档', 'url': reverse('core:documents'), 'active': active == 'docs'},
+        {'label': 'Bio.', 'url': reverse('core:bio'), 'active': active == 'bio'},
+        {'label': '快捷链接', 'url': reverse('core:quick_links'), 'active': active == 'links'},
+        {
+            'label': '服务器状态',
+            'url': 'https://status.srinternet.top/dashboard',
+            'active': active == 'status',
+            'external': True,
+        },
     ]
+
+
+def home(request):
+    nav_items = build_nav_items('home')
     return render(
         request,
         'core/home.html',
         {
             'nav_items': nav_items,
+            'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
+def quick_links(request):
+    return render(
+        request,
+        'core/quick_links.html',
+        {
+            'nav_items': build_nav_items('links'),
+            'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
+            'shortcut_links': ShortcutLink.objects.filter(is_active=True),
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
+def documents(request):
+    return render(
+        request,
+        'core/documents.html',
+        {
+            'documents': FeishuDocument.objects.filter(is_active=True),
+            'nav_items': build_nav_items('docs'),
+            'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
+            'site_setting': SiteSetting.load(),
+        },
+    )
+
+
+def members(request):
+    return render(
+        request,
+        'core/members.html',
+        {
+            'members': MemberProfile.objects.filter(is_active=True).select_related('lookup_code'),
+            'nav_items': build_nav_items('members'),
             'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
             'site_setting': SiteSetting.load(),
         },
@@ -236,6 +286,7 @@ def bio(request, identifier=''):
             'bio_profile': bio_profile,
             'is_owner': is_owner,
             'lookup_code': lookup_code,
+            'nav_items': build_nav_items('bio'),
             'oauth_user': oauth_user,
             'search_value': lookup_value,
             'site_setting': SiteSetting.load(),
@@ -267,6 +318,7 @@ def bio_edit(request):
             'bio_profile': bio_profile,
             'form': form,
             'lookup_code': lookup_code,
+            'nav_items': build_nav_items('bio'),
             'oauth_user': oauth_user,
             'site_setting': SiteSetting.load(),
         },
@@ -285,6 +337,7 @@ def bio_help(request):
         {
             'help_html': mark_safe(render_markdown(BIO_HELP_MARKDOWN)),
             'help_markdown': BIO_HELP_MARKDOWN,
+            'nav_items': build_nav_items('bio'),
             'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
             'site_setting': SiteSetting.load(),
         },
