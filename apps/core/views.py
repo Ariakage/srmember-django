@@ -1,20 +1,28 @@
 import base64
+import hashlib
 import json
 from collections.abc import Mapping
 from json import JSONDecodeError
+from urllib.parse import urlencode, urlsplit
 
 import requests
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth import login as django_login
+from django.contrib.auth import logout as django_logout
 from django.http import FileResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import SiteSetting
 from .oauth import oauth
 
 
 OAUTH_USER_SESSION_KEY = 'oauth_user'
+OAUTH_NEXT_SESSION_KEY = 'oauth_next_url'
+OAUTH_ADMIN_USERNAME_PREFIX = 'sr_oauth_'
 ACCESS_TOKEN_KEYS = ('access_token', 'accessToken', 'token', 'access')
 ACCESS_TOKEN_CONTAINER_KEYS = ('data', 'result', 'payload')
 USERINFO_KEYS = (
@@ -28,6 +36,8 @@ USERINFO_KEYS = (
     'picture',
     'avatar',
     'permanentAvatar',
+    'isorganizationadmin',
+    'isAdmin',
 )
 
 
@@ -55,6 +65,11 @@ def favicon(request):
 
 
 def oauth_login(request):
+    next_url = get_safe_redirect_url(request, request.GET.get('next'))
+    if next_url:
+        request.session[OAUTH_NEXT_SESSION_KEY] = next_url
+    else:
+        request.session.pop(OAUTH_NEXT_SESSION_KEY, None)
     redirect_uri = request.build_absolute_uri(reverse('core:oauth_callback'))
     return oauth.sr_united.authorize_redirect(request, redirect_uri)
 
@@ -62,14 +77,26 @@ def oauth_login(request):
 def oauth_callback(request):
     token = fetch_oauth_access_token(request)
     userinfo = resolve_oauth_userinfo(token)
+    print_oauth_payload('oauth resolved userinfo payload', userinfo)
     normalized_user = normalize_oauth_user(userinfo)
+    redirect_url = get_oauth_callback_redirect_url(request, normalized_user)
+    django_logout(request)
     request.session[OAUTH_USER_SESSION_KEY] = normalized_user
-    return redirect('core:home')
+    if normalized_user['is_admin']:
+        login_oauth_admin_user(request, normalized_user)
+    return redirect(redirect_url)
 
 
 def oauth_logout(request):
-    request.session.pop(OAUTH_USER_SESSION_KEY, None)
+    django_logout(request)
     return redirect('core:home')
+
+
+def admin_oauth_login(request):
+    next_url = get_safe_redirect_url(request, request.GET.get('next')) or reverse('admin:index')
+    if request.user.is_authenticated and request.user.is_staff:
+        return redirect(next_url)
+    return redirect(f"{reverse('core:oauth_login')}?{urlencode({'next': next_url})}")
 
 
 def fetch_oauth_access_token(request):
@@ -111,7 +138,52 @@ def normalize_oauth_user(userinfo):
         'nickname': nickname,
         'avatar': avatar,
         'email': first_oauth_value(payloads, ('email',)),
+        'is_admin': first_oauth_bool(payloads, ('isorganizationadmin', 'isAdmin')),
     }
+
+
+def login_oauth_admin_user(request, oauth_user):
+    User = get_user_model()
+    username = build_oauth_admin_username(oauth_user)
+    user, created = User.objects.get_or_create(username=username)
+    if created:
+        user.set_unusable_password()
+    user.email = oauth_user.get('email', '')
+    user.first_name = oauth_user.get('nickname', '')[:150]
+    user.is_active = True
+    user.is_staff = True
+    user.is_superuser = True
+    user.save()
+    django_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+
+
+def build_oauth_admin_username(oauth_user):
+    identifier = oauth_user.get('sub') or oauth_user.get('email') or oauth_user.get('nickname') or 'unknown'
+    digest = hashlib.sha256(identifier.encode('utf-8')).hexdigest()[:32]
+    return f'{OAUTH_ADMIN_USERNAME_PREFIX}{digest}'
+
+
+def get_oauth_callback_redirect_url(request, oauth_user):
+    next_url = get_safe_redirect_url(request, request.session.pop(OAUTH_NEXT_SESSION_KEY, ''))
+    if next_url and (oauth_user['is_admin'] or not is_admin_redirect_url(next_url)):
+        return next_url
+    return reverse('core:home')
+
+
+def get_safe_redirect_url(request, url):
+    if not url:
+        return ''
+    if url_has_allowed_host_and_scheme(
+        url=url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return url
+    return ''
+
+
+def is_admin_redirect_url(url):
+    return urlsplit(url).path.startswith(reverse('admin:index'))
 
 
 def resolve_oauth_userinfo(token):
@@ -171,6 +243,24 @@ def first_oauth_value(payloads, keys):
             if value:
                 return value
     return ''
+
+
+def first_oauth_bool(payloads, keys):
+    for payload in payloads:
+        for key in keys:
+            if key not in payload:
+                continue
+            value = payload[key]
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, int):
+                return value != 0
+            value = str(value).strip().lower()
+            if value in {'1', 'true', 'yes', 'y', 'on'}:
+                return True
+            if value in {'0', 'false', 'no', 'n', 'off', ''}:
+                return False
+    return False
 
 
 def find_access_token(token):
@@ -252,6 +342,7 @@ def fetch_userinfo(access_token):
     )
     response.raise_for_status()
     payload = response.json()
+    print_oauth_payload('oauth userinfo response payload', payload)
     if isinstance(payload, Mapping) and isinstance(payload.get('data'), Mapping):
         return payload['data']
     return payload
@@ -261,3 +352,27 @@ def decode_jwt_payload(token):
     payload = token.split('.')[1]
     payload += '=' * (-len(payload) % 4)
     return json.loads(base64.urlsafe_b64decode(payload))
+
+
+def print_oauth_payload(label, payload):
+    print(f'\n[{label}]')
+    print(json.dumps(mask_oauth_payload(payload), ensure_ascii=False, indent=2, default=str))
+
+
+def mask_oauth_payload(value):
+    if isinstance(value, Mapping):
+        return {
+            key: mask_oauth_value(key, item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [mask_oauth_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return [mask_oauth_payload(item) for item in value]
+    return value
+
+
+def mask_oauth_value(key, value):
+    if key in {'access_token', 'accessToken', 'refresh_token', 'refreshToken', 'id_token', 'idToken', 'token'}:
+        return f'<redacted:{len(str(value))} chars>'
+    return mask_oauth_payload(value)

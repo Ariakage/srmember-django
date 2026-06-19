@@ -18,9 +18,15 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from apps.core import views as core_views
+
+admin.site.site_header = 'SR思锐 管理后台'
+admin.site.site_title = 'SRMember Admin'
+admin.site.index_title = '团队内部成员系统管理'
 
 urlpatterns = [
     path('', include('apps.core.urls')),
+    path('admin/login/', core_views.admin_oauth_login, name='admin_oauth_login'),
     path('admin/', admin.site.urls),
 ]
 

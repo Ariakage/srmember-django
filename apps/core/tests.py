@@ -2,6 +2,7 @@ import base64
 import json
 from unittest.mock import Mock, patch
 
+from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.test import TestCase
 
@@ -188,6 +189,69 @@ class CoreViewTests(TestCase):
         self.assertEqual(oauth_user['nickname'], 'ariakage')
         self.assertEqual(oauth_user['avatar'], 'https://example.com/avatar.png')
 
+    def test_oauth_callback_logs_is_admin_user_into_django_admin(self):
+        session = self.client.session
+        session[views.OAUTH_NEXT_SESSION_KEY] = '/admin/'
+        session.save()
+        token = {
+            'userinfo': {
+                'id': 'admin-user',
+                'picture': 'https://example.com/admin.png',
+                'email': 'admin@example.com',
+                'isorganizationadmin': True,
+            },
+        }
+
+        with patch.object(views, 'fetch_oauth_access_token', return_value=token):
+            response = self.client.get('/oauth/callback/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/admin/')
+        oauth_user = self.client.session[views.OAUTH_USER_SESSION_KEY]
+        self.assertTrue(oauth_user['is_admin'])
+        admin_user = get_user_model().objects.get(pk=self.client.session['_auth_user_id'])
+        self.assertEqual(admin_user.email, 'admin@example.com')
+        self.assertTrue(admin_user.is_staff)
+        self.assertTrue(admin_user.is_superuser)
+        self.assertFalse(admin_user.has_usable_password())
+
+    def test_oauth_callback_blocks_non_admin_user_from_admin_next_url(self):
+        session = self.client.session
+        session[views.OAUTH_NEXT_SESSION_KEY] = '/admin/'
+        session.save()
+        token = {
+            'userinfo': {
+                'id': 'member-user',
+                'picture': 'https://example.com/member.png',
+                'isorganizationadmin': False,
+            },
+        }
+
+        with patch.object(views, 'fetch_oauth_access_token', return_value=token):
+            response = self.client.get('/oauth/callback/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/')
+        oauth_user = self.client.session[views.OAUTH_USER_SESSION_KEY]
+        self.assertFalse(oauth_user['is_admin'])
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_oauth_callback_accepts_string_is_admin_value(self):
+        token = {
+            'userinfo': {
+                'id': 'admin-string-user',
+                'isorganizationadmin': 'true',
+            },
+        }
+
+        with patch.object(views, 'fetch_oauth_access_token', return_value=token):
+            response = self.client.get('/oauth/callback/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 302)
+        oauth_user = self.client.session[views.OAUTH_USER_SESSION_KEY]
+        self.assertTrue(oauth_user['is_admin'])
+        self.assertIn('_auth_user_id', self.client.session)
+
     def test_oauth_callback_uses_nested_picture_and_id_fields(self):
         token = {
             'userinfo': {
@@ -287,6 +351,8 @@ class CoreViewTests(TestCase):
         self.assertEqual(oauth_user['avatar'], 'https://example.com/id.png')
 
     def test_oauth_logout_clears_user(self):
+        user = get_user_model().objects.create_user(username='staff', password='password', is_staff=True)
+        self.client.force_login(user)
         session = self.client.session
         session[views.OAUTH_USER_SESSION_KEY] = {'nickname': 'Ariakage'}
         session.save()
@@ -295,3 +361,30 @@ class CoreViewTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertNotIn(views.OAUTH_USER_SESSION_KEY, self.client.session)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_admin_login_redirects_to_oauth_login(self):
+        response = self.client.get('/admin/login/?next=/admin/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/oauth/login/?next=%2Fadmin%2F')
+
+    def test_admin_login_redirects_staff_user_to_admin(self):
+        user = get_user_model().objects.create_user(username='staff', password='password', is_staff=True)
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/login/?next=/admin/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/admin/')
+
+    def test_admin_index_uses_srmember_branding(self):
+        user = get_user_model().objects.create_user(username='staff', password='password', is_staff=True)
+        self.client.force_login(user)
+
+        response = self.client.get('/admin/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'admin/css/srmember_admin.css')
+        self.assertContains(response, '/static/images/logo.png')
+        self.assertContains(response, 'SR思锐 管理后台')
