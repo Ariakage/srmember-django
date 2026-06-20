@@ -19,6 +19,14 @@
         </button>
     </form>
 
+    {% if bio_not_found %}
+        <div class="rounded-lg border border-dashed border-slate-300 bg-white px-5 py-10 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+            <div class="text-lg font-semibold tracking-normal text-slate-950 dark:text-white">没有这个用户</div>
+            <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                没有找到与“{{ search_value }}”匹配的查找码或 {{ site_setting.sr_user_id_label }}。
+            </p>
+        </div>
+    {% else %}
     <article class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/5">
         <div class="bg-gradient-to-br from-primary to-primary-2 px-6 py-8 text-white">
             <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -86,5 +94,6 @@
             {% endif %}
         </div>
     </article>
+    {% endif %}
 </section>
 {% endblock %}

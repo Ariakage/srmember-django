@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import time
 from collections.abc import Mapping
 from json import JSONDecodeError
 from urllib.parse import urlencode, urlsplit
@@ -11,6 +12,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
+from django.db.models import F
 from django.http import FileResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -26,6 +28,7 @@ from .oauth import oauth
 
 OAUTH_USER_SESSION_KEY = 'oauth_user'
 OAUTH_NEXT_SESSION_KEY = 'oauth_next_url'
+WEBSITE_VISIT_COUNTED_SESSION_KEY = 'website_visit_counted'
 OAUTH_ADMIN_USERNAME_PREFIX = 'sr_oauth_'
 ACCESS_TOKEN_KEYS = ('access_token', 'accessToken', 'token', 'access')
 ACCESS_TOKEN_CONTAINER_KEYS = ('data', 'result', 'payload')
@@ -209,14 +212,26 @@ def build_nav_items(active='', site_setting=None):
 
 
 def home(request):
-    nav_items = build_nav_items('home')
+    started_at = time.perf_counter()
+    site_setting = SiteSetting.load()
+    if not request.session.get(WEBSITE_VISIT_COUNTED_SESSION_KEY):
+        SiteSetting.objects.filter(pk=site_setting.pk).update(website_visit_count=F('website_visit_count') + 1)
+        request.session[WEBSITE_VISIT_COUNTED_SESSION_KEY] = True
+        site_setting.refresh_from_db(fields=('website_visit_count',))
+    response_time_ms = max(1, round((time.perf_counter() - started_at) * 1000))
     return render(
         request,
         'core/home.html',
         {
-            'nav_items': nav_items,
+            'active_documents_count': FeishuDocument.objects.filter(is_active=True).count(),
+            'active_members_count': MemberProfile.objects.filter(is_active=True).count(),
+            'active_shortcut_links_count': ShortcutLink.objects.filter(is_active=True).count(),
+            'nav_items': build_nav_items('home', site_setting),
             'oauth_user': request.session.get(OAUTH_USER_SESSION_KEY),
-            'site_setting': SiteSetting.load(),
+            'pinned_documents': FeishuDocument.objects.filter(is_active=True, is_pinned=True)[:3],
+            'pinned_shortcut_links': ShortcutLink.objects.filter(is_active=True, is_pinned=True)[:3],
+            'response_time_ms': response_time_ms,
+            'site_setting': site_setting,
         },
     )
 
@@ -270,7 +285,20 @@ def bio(request, identifier=''):
     oauth_user = request.session.get(OAUTH_USER_SESSION_KEY)
 
     if lookup_value:
-        lookup_code = get_or_create_bio_lookup_code(lookup_value)
+        lookup_code = find_bio_lookup_code(lookup_value)
+        if not lookup_code:
+            return render(
+                request,
+                'core/bio.html',
+                {
+                    'bio_not_found': True,
+                    'lookup_code': None,
+                    'nav_items': build_nav_items('bio'),
+                    'oauth_user': oauth_user,
+                    'search_value': lookup_value,
+                    'site_setting': SiteSetting.load(),
+                },
+            )
     elif oauth_user:
         lookup_code = sync_oauth_lookup_code(oauth_user)
     else:
@@ -442,15 +470,11 @@ def get_oauth_lookup_user_id(oauth_user):
     return oauth_user.get('sub') or oauth_user.get('email') or oauth_user.get('nickname') or 'unknown'
 
 
-def get_or_create_bio_lookup_code(identifier):
+def find_bio_lookup_code(identifier):
     lookup_code = OAuthLookupCode.objects.filter(identification_code=identifier.upper()).first()
     if lookup_code:
         return lookup_code
-    lookup_code, _ = OAuthLookupCode.objects.get_or_create(
-        sr_user_id=identifier,
-        defaults={'nickname': identifier},
-    )
-    return lookup_code
+    return OAuthLookupCode.objects.filter(sr_user_id=identifier).first()
 
 
 def get_bio_profile(lookup_code, user=None):

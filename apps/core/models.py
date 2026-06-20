@@ -245,6 +245,10 @@ class SiteSetting(models.Model):
         default='集中管理团队成员、快捷链接与协作资料。',
         verbose_name='首页 Dashboard 说明',
     )
+    website_visit_count = models.PositiveBigIntegerField(
+        default=0,
+        verbose_name='网站访问次数',
+    )
     footer_copyright = models.CharField(
         max_length=120,
         default='© 2026 Ariakage 保留所有权利.',

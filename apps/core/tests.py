@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from django.test import TestCase
+from django.test import Client, TestCase
 
 from . import admin as core_admin
 from . import views
@@ -67,6 +67,91 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'href="mailto:help@example.com"')
         self.assertContains(response, '自定义 Dashboard 说明')
         self.assertContains(response, '团队内部成员系统')
+
+    def test_home_dashboard_shows_counts_and_pinned_content(self):
+        SiteSetting.objects.update_or_create(pk=1, defaults={'website_visit_count': 41})
+        MemberProfile.objects.create(nickname='启用成员 A')
+        MemberProfile.objects.create(nickname='启用成员 B')
+        MemberProfile.objects.create(nickname='隐藏成员', is_active=False)
+        ShortcutLink.objects.create(
+            title='首页置顶链接',
+            url='https://example.com/pinned-link',
+            description='首页链接说明',
+            is_pinned=True,
+        )
+        ShortcutLink.objects.create(
+            title='普通链接',
+            url='https://example.com/normal-link',
+        )
+        ShortcutLink.objects.create(
+            title='隐藏置顶链接',
+            url='https://example.com/hidden-link',
+            is_active=False,
+            is_pinned=True,
+        )
+        FeishuDocument.objects.create(
+            title='首页置顶文档',
+            document_url='https://example.feishu.cn/docx/home-pinned',
+            description='首页文档说明',
+            is_pinned=True,
+        )
+        FeishuDocument.objects.create(
+            title='普通文档',
+            document_url='https://example.feishu.cn/docx/home-normal',
+        )
+        FeishuDocument.objects.create(
+            title='隐藏置顶文档',
+            document_url='https://example.feishu.cn/docx/home-hidden',
+            is_active=False,
+            is_pinned=True,
+        )
+
+        response = self.client.get('/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['active_members_count'], 2)
+        self.assertEqual(response.context['active_shortcut_links_count'], 2)
+        self.assertEqual(response.context['active_documents_count'], 2)
+        self.assertGreaterEqual(response.context['response_time_ms'], 1)
+        self.assertNotIn('server_time', response.context)
+        self.assertEqual(response.context['site_setting'].website_visit_count, 42)
+        self.assertEqual(SiteSetting.objects.get(pk=1).website_visit_count, 42)
+        self.assertContains(response, '首页 Dashboard')
+        self.assertContains(response, '网站响应时间')
+        self.assertContains(response, '网站访问次数')
+        self.assertNotContains(response, '服务器时间')
+        self.assertContains(response, '42')
+        self.assertContains(response, 'ms')
+        self.assertContains(response, '系统概览')
+        self.assertContains(response, '首页置顶链接')
+        self.assertContains(response, '首页链接说明')
+        self.assertContains(response, '首页置顶文档')
+        self.assertContains(response, '首页文档说明')
+        self.assertContains(response, 'h-28')
+        self.assertNotContains(response, '隐藏成员')
+        self.assertNotContains(response, '隐藏置顶链接')
+        self.assertNotContains(response, '隐藏置顶文档')
+
+    def test_home_visit_count_increments_once_per_session(self):
+        SiteSetting.objects.update_or_create(pk=1, defaults={'website_visit_count': 10})
+
+        first_response = self.client.get('/', HTTP_HOST='127.0.0.1')
+        refresh_response = self.client.get('/', HTTP_HOST='127.0.0.1')
+        self.client.get('/members/', HTTP_HOST='127.0.0.1')
+        return_response = self.client.get('/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(refresh_response.status_code, 200)
+        self.assertEqual(return_response.status_code, 200)
+        self.assertTrue(self.client.session[views.WEBSITE_VISIT_COUNTED_SESSION_KEY])
+        self.assertEqual(SiteSetting.objects.get(pk=1).website_visit_count, 11)
+        self.assertEqual(return_response.context['site_setting'].website_visit_count, 11)
+
+        new_session_client = Client()
+        new_session_response = new_session_client.get('/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(new_session_response.status_code, 200)
+        self.assertEqual(SiteSetting.objects.get(pk=1).website_visit_count, 12)
 
     def test_home_shows_logged_in_user(self):
         session = self.client.session
@@ -540,6 +625,19 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'lookup-bio-user')
         self.assertContains(response, lookup_code.identification_code)
 
+    def test_bio_can_be_viewed_by_existing_user_id(self):
+        lookup_code = OAuthLookupCode.objects.create(
+            sr_user_id='existing-user-id',
+            nickname='Existing User',
+        )
+
+        response = self.client.get('/bio/existing-user-id/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Existing User')
+        self.assertContains(response, 'existing-user-id')
+        self.assertContains(response, lookup_code.identification_code)
+
     def test_bio_uses_site_setting_sr_user_id_label(self):
         SiteSetting.objects.update_or_create(
             pk=1,
@@ -557,13 +655,22 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '成员唯一 ID：custom-label-user')
         self.assertNotContains(response, 'SR 用户 ID：custom-label-user')
 
-    def test_bio_can_be_viewed_by_sub_and_generates_missing_lookup_code(self):
+    def test_bio_lookup_missing_user_does_not_create_lookup_code(self):
         response = self.client.get('/bio/direct-sub-user/', HTTP_HOST='127.0.0.1')
 
         self.assertEqual(response.status_code, 200)
-        lookup_code = OAuthLookupCode.objects.get(sr_user_id='direct-sub-user')
+        self.assertFalse(OAuthLookupCode.objects.filter(sr_user_id='direct-sub-user').exists())
+        self.assertFalse(BioProfile.objects.filter(sr_user_id='direct-sub-user').exists())
+        self.assertContains(response, '没有这个用户')
         self.assertContains(response, 'direct-sub-user')
-        self.assertContains(response, lookup_code.identification_code)
+
+    def test_bio_query_missing_user_does_not_create_lookup_code(self):
+        response = self.client.get('/bio/?q=missing-query-user', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(OAuthLookupCode.objects.filter(sr_user_id='missing-query-user').exists())
+        self.assertContains(response, '没有这个用户')
+        self.assertContains(response, 'missing-query-user')
 
     def test_bio_does_not_show_edit_button_for_other_user(self):
         lookup_code = OAuthLookupCode.objects.create(
