@@ -101,31 +101,31 @@
 </head>
 <body class="flex min-h-full flex-col bg-slate-50 text-slate-950 antialiased transition-colors dark:bg-slate-950 dark:text-white">
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur dark:border-white/10 dark:bg-slate-950/85">
-        <nav class="flex h-16 w-full items-center px-4 sm:px-6 lg:px-8" aria-label="主导航">
-            <a href="{{ site_setting.nav_link_url }}"{% if site_setting.nav_link_is_external %} target="_blank" rel="noopener noreferrer"{% endif %} class="flex shrink-0 items-center gap-3 rounded-md transition hover:opacity-80">
+        <nav class="flex min-h-16 w-full flex-wrap items-center gap-y-2 px-4 py-2 sm:px-6 lg:h-16 lg:flex-nowrap lg:gap-y-0 lg:px-8 lg:py-0" aria-label="主导航">
+            <a href="{{ site_setting.nav_link_url }}"{% if site_setting.nav_link_is_external %} target="_blank" rel="noopener noreferrer"{% endif %} class="flex min-w-0 shrink-0 items-center gap-3 rounded-md transition hover:opacity-80">
                 <img src="{{ site_setting.nav_logo_url }}" alt="{{ site_setting.site_name }}" class="h-9 w-9 rounded-md object-contain">
                 <div class="hidden leading-tight sm:block">
                     <div class="text-sm font-semibold tracking-normal text-slate-950 dark:text-white">{{ site_setting.site_name }}</div>
                     <div class="text-xs text-slate-500 dark:text-slate-400">团队内部成员系统</div>
                 </div>
             </a>
-            <div class="mx-8 h-8 w-px shrink-0 bg-slate-200 dark:bg-white/10"></div>
-            <div class="flex min-w-0 items-center gap-1 overflow-x-auto">
+            <div class="mx-8 hidden h-8 w-px shrink-0 bg-slate-200 lg:block dark:bg-white/10"></div>
+            <div class="order-last -mx-4 flex w-[calc(100%+2rem)] min-w-0 items-center gap-1 overflow-x-auto border-t border-slate-200/80 px-4 pt-2 sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 lg:order-none lg:mx-0 lg:w-auto lg:flex-1 lg:border-t-0 lg:px-0 lg:pt-0 dark:border-white/10">
                 {% for item in nav_items %}
-                    <a href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition {% if item.active %}bg-primary text-white shadow-sm shadow-primary/30{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white{% endif %}">
+                    <a href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-2 text-sm font-medium transition sm:gap-2 sm:px-3 {% if item.active %}bg-primary text-white shadow-sm shadow-primary/30{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white{% endif %}">
                         <i data-lucide="{{ item.icon }}" class="h-4 w-4" aria-hidden="true"></i>
                         {{ item.label }}
                     </a>
                 {% endfor %}
             </div>
-            <div class="ml-auto flex shrink-0 items-center gap-3">
-                <button id="theme-toggle" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2" aria-label="切换深色和浅色模式" aria-pressed="false">
+            <div class="ml-auto flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+                <button id="theme-toggle" type="button" class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 transition hover:border-primary hover:text-primary sm:h-10 sm:w-10 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2" aria-label="切换深色和浅色模式" aria-pressed="false">
                     <i id="theme-icon-moon" data-lucide="moon" class="h-5 w-5" aria-hidden="true"></i>
                     <i id="theme-icon-sun" data-lucide="sun" class="hidden h-5 w-5" aria-hidden="true"></i>
                 </button>
                 {% if oauth_user %}
-                    <div class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
-                        <a href="{% url 'core:bio' %}" class="flex min-w-0 items-center gap-3 rounded-md transition hover:text-primary dark:hover:text-primary-2">
+                    <div class="flex min-w-0 items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1.5 sm:gap-3 sm:px-3 dark:border-white/10 dark:bg-white/5">
+                        <a href="{% url 'core:bio' %}" class="flex min-w-0 items-center gap-2 rounded-md transition hover:text-primary sm:gap-3 dark:hover:text-primary-2">
                             {% if oauth_user.avatar %}
                                 <img src="{{ oauth_user.avatar }}" alt="{{ oauth_user.nickname }}" class="h-8 w-8 rounded-full object-cover">
                             {% else %}
@@ -143,7 +143,7 @@
                         </a>
                     </div>
                 {% else %}
-                    <div class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
+                    <div class="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-1.5 sm:gap-3 sm:px-3 dark:border-white/10 dark:bg-white/5">
                         <div class="hidden leading-tight sm:block">
                             <div class="text-xs text-slate-500 dark:text-slate-400">未登录</div>
                             <div class="text-sm font-medium text-slate-950 dark:text-white">访客</div>

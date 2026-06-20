@@ -3,11 +3,11 @@
 {% block title %}文档 | {{ site_setting.site_name }} 团队内部成员系统{% endblock %}
 
 {% block content %}
-<section class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+<section class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
     <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <div class="text-sm font-medium text-primary">文档</div>
-            <h1 class="mt-1 text-3xl font-semibold tracking-normal text-slate-950 dark:text-white">团队文档</h1>
+            <h1 class="mt-1 text-2xl font-semibold tracking-normal text-slate-950 sm:text-3xl dark:text-white">团队文档</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
                 飞书云文档入口由后台统一维护，可配置头图、简介、置顶和访问凭证。
             </p>
@@ -32,16 +32,16 @@
                         </span>
                     {% endif %}
                 </span>
-                <span class="flex min-w-0 flex-1 flex-col px-5 py-4">
+                <span class="flex min-w-0 flex-1 flex-col px-4 py-4 sm:px-5">
                     <span class="block truncate text-base font-semibold transition {% if document.is_pinned %}text-purple-950 group-hover:text-purple-700 dark:text-purple-50 dark:group-hover:text-purple-200{% else %}text-slate-950 group-hover:text-primary dark:text-white dark:group-hover:text-primary-2{% endif %}">{{ document.display_title }}</span>
                     {% if document.description %}
                         <span class="mt-2 line-clamp-2 text-sm leading-6 {% if document.is_pinned %}text-purple-800/80 dark:text-purple-100/75{% else %}text-slate-500 dark:text-slate-400{% endif %}">{{ document.description }}</span>
                     {% else %}
                         <span class="mt-2 text-sm leading-6 text-slate-400 dark:text-slate-500">暂无简介</span>
                     {% endif %}
-                    <span class="mt-auto flex items-center justify-between gap-3 pt-4">
+                    <span class="mt-auto flex flex-col items-stretch gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <span class="block truncate font-mono text-xs {% if document.is_pinned %}text-purple-600/70 dark:text-purple-200/60{% else %}text-slate-400 dark:text-slate-500{% endif %}">{{ document.document_url }}</span>
-                        <span class="inline-flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition {% if document.is_pinned %}bg-purple-800 shadow-purple-800/25 group-hover:bg-purple-700{% else %}bg-primary shadow-primary/25 group-hover:bg-primary-2{% endif %}">
+                        <span class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm transition {% if document.is_pinned %}bg-purple-800 shadow-purple-800/25 group-hover:bg-purple-700{% else %}bg-primary shadow-primary/25 group-hover:bg-primary-2{% endif %}">
                             <i data-lucide="external-link" class="h-4 w-4" aria-hidden="true"></i>
                             打开
                         </span>
