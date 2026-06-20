@@ -94,6 +94,7 @@ class ShortcutLink(models.Model):
     title = models.CharField(max_length=80, verbose_name='标题')
     url = models.CharField(max_length=500, verbose_name='链接')
     description = models.CharField(max_length=180, blank=True, verbose_name='说明')
+    is_pinned = models.BooleanField(default=False, verbose_name='置顶')
     sort_order = models.PositiveIntegerField(default=0, verbose_name='排序')
     is_active = models.BooleanField(default=True, verbose_name='启用')
     open_new_tab = models.BooleanField(default=True, verbose_name='新窗口打开')
@@ -101,7 +102,7 @@ class ShortcutLink(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     class Meta:
-        ordering = ('sort_order', 'title')
+        ordering = ('-is_pinned', 'sort_order', 'title')
         verbose_name = '快捷链接'
         verbose_name_plural = '快捷链接'
 
@@ -215,6 +216,35 @@ class MemberProfile(models.Model):
 
 
 class SiteSetting(models.Model):
+    site_name = models.CharField(
+        max_length=80,
+        default='SR思锐',
+        verbose_name='网站名称',
+    )
+    nav_logo_url = models.CharField(
+        max_length=500,
+        default='/static/images/logo.png',
+        verbose_name='导航 Logo 地址',
+    )
+    nav_link_url = models.CharField(
+        max_length=500,
+        default='/',
+        verbose_name='导航跳转地址',
+    )
+    support_email = models.EmailField(
+        default='support@sr-studio.cn',
+        verbose_name='支持邮箱',
+    )
+    sr_user_id_label = models.CharField(
+        max_length=60,
+        default='SR 用户 ID',
+        verbose_name='SR 用户 ID 字样',
+    )
+    home_dashboard_description = models.CharField(
+        max_length=180,
+        default='集中管理团队成员、快捷链接与协作资料。',
+        verbose_name='首页 Dashboard 说明',
+    )
     footer_copyright = models.CharField(
         max_length=120,
         default='© 2026 Ariakage 保留所有权利.',
@@ -237,6 +267,10 @@ class SiteSetting(models.Model):
 
     def __str__(self):
         return '站点设置'
+
+    @property
+    def nav_link_is_external(self):
+        return self.nav_link_url.startswith(('http://', 'https://'))
 
     def save(self, *args, **kwargs):
         self.pk = 1

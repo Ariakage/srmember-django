@@ -12,7 +12,7 @@ from . import admin as core_admin
 from . import views
 from .feishu import fetch_feishu_document_metadata, parse_feishu_doc_token
 from .markdown import render_markdown
-from .models import BioProfile, FeishuDocument, FeishuDocumentSetting, MemberProfile, OAuthLookupCode, ShortcutLink
+from .models import BioProfile, FeishuDocument, FeishuDocumentSetting, MemberProfile, OAuthLookupCode, ShortcutLink, SiteSetting
 
 
 class CoreViewTests(TestCase):
@@ -31,13 +31,42 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'href="/docs/"')
         self.assertContains(response, 'Bio.')
         self.assertContains(response, '快捷链接')
+        self.assertContains(response, '查看链接')
         self.assertContains(response, 'href="/links/"')
         self.assertContains(response, '服务器状态')
         self.assertContains(response, 'https://status.srinternet.top/dashboard')
+        self.assertContains(response, '帮助与支持')
+        self.assertContains(response, 'href="mailto:support@sr-studio.cn"')
         self.assertContains(response, 'target="_blank" rel="noopener noreferrer"')
         self.assertContains(response, 'document.startViewTransition')
         self.assertContains(response, '@keyframes sr-theme-reveal')
         self.assertContains(response, 'animateThemeButton')
+        content = response.content.decode()
+        self.assertLess(content.index('服务器状态'), content.index('帮助与支持'))
+
+    def test_home_uses_site_setting_brand_nav_support_and_dashboard(self):
+        SiteSetting.objects.update_or_create(
+            pk=1,
+            defaults={
+                'site_name': 'SR Labs',
+                'nav_logo_url': 'https://example.com/logo.png',
+                'nav_link_url': 'https://example.com/portal',
+                'support_email': 'help@example.com',
+                'home_dashboard_description': '自定义 Dashboard 说明',
+            },
+        )
+
+        response = self.client.get('/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SR Labs')
+        self.assertContains(response, 'SR Labs 团队内部成员系统')
+        self.assertContains(response, 'https://example.com/logo.png')
+        self.assertContains(response, 'alt="SR Labs"')
+        self.assertContains(response, 'href="https://example.com/portal" target="_blank" rel="noopener noreferrer"')
+        self.assertContains(response, 'href="mailto:help@example.com"')
+        self.assertContains(response, '自定义 Dashboard 说明')
+        self.assertContains(response, '团队内部成员系统')
 
     def test_home_shows_logged_in_user(self):
         session = self.client.session
@@ -65,6 +94,13 @@ class CoreViewTests(TestCase):
             sort_order=2,
         )
         ShortcutLink.objects.create(
+            title='置顶入口',
+            url='https://example.com/pinned',
+            description='重要入口',
+            is_pinned=True,
+            sort_order=99,
+        )
+        ShortcutLink.objects.create(
             title='内部文档',
             url='/docs/',
             description='内部资料入口',
@@ -81,12 +117,17 @@ class CoreViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '团队快捷链接')
+        self.assertContains(response, '置顶入口')
+        self.assertContains(response, '重要入口')
+        self.assertContains(response, '置顶')
+        self.assertContains(response, 'border-purple-800 bg-purple-50')
         self.assertContains(response, '内部文档')
         self.assertContains(response, 'href="/docs/"')
         self.assertContains(response, 'SR Studio')
         self.assertContains(response, 'href="https://sr-studio.cn/" target="_blank" rel="noopener noreferrer"')
         self.assertNotContains(response, '隐藏入口')
         content = response.content.decode()
+        self.assertLess(content.index('置顶入口'), content.index('内部文档'))
         self.assertLess(content.index('内部文档'), content.index('SR Studio'))
 
     def test_quick_links_page_shows_empty_state(self):
@@ -499,6 +540,23 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'lookup-bio-user')
         self.assertContains(response, lookup_code.identification_code)
 
+    def test_bio_uses_site_setting_sr_user_id_label(self):
+        SiteSetting.objects.update_or_create(
+            pk=1,
+            defaults={'sr_user_id_label': '成员唯一 ID'},
+        )
+        lookup_code = OAuthLookupCode.objects.create(
+            sr_user_id='custom-label-user',
+            nickname='Custom Label Bio',
+        )
+
+        response = self.client.get(f'/bio/{lookup_code.identification_code}/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'placeholder="输入查找码或 成员唯一 ID"')
+        self.assertContains(response, '成员唯一 ID：custom-label-user')
+        self.assertNotContains(response, 'SR 用户 ID：custom-label-user')
+
     def test_bio_can_be_viewed_by_sub_and_generates_missing_lookup_code(self):
         response = self.client.get('/bio/direct-sub-user/', HTTP_HOST='127.0.0.1')
 
@@ -884,6 +942,44 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'SRMember 管理后台')
         self.assertContains(response, '注销')
 
+    def test_admin_site_setting_allows_brand_nav_support_and_dashboard_settings(self):
+        user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
+        SiteSetting.objects.update_or_create(
+            pk=1,
+            defaults={
+                'site_name': '后台站点名',
+                'nav_logo_url': 'https://example.com/admin-logo.png',
+                'nav_link_url': 'https://example.com/admin-home',
+                'support_email': 'admin-support@example.com',
+                'sr_user_id_label': '后台用户 ID',
+                'home_dashboard_description': '后台 Dashboard 说明',
+            },
+        )
+        self.client.force_login(user)
+
+        list_response = self.client.get('/admin/core/sitesetting/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertContains(list_response, '后台站点名')
+        self.assertContains(list_response, 'admin-support@example.com')
+        self.assertContains(list_response, 'https://example.com/admin-home')
+
+        response = self.client.get('/admin/core/sitesetting/1/change/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="site_name"')
+        self.assertContains(response, 'value="后台站点名"')
+        self.assertContains(response, 'name="nav_logo_url"')
+        self.assertContains(response, 'value="https://example.com/admin-logo.png"')
+        self.assertContains(response, 'name="nav_link_url"')
+        self.assertContains(response, 'value="https://example.com/admin-home"')
+        self.assertContains(response, 'name="support_email"')
+        self.assertContains(response, 'value="admin-support@example.com"')
+        self.assertContains(response, 'name="sr_user_id_label"')
+        self.assertContains(response, 'value="后台用户 ID"')
+        self.assertContains(response, 'name="home_dashboard_description"')
+        self.assertContains(response, '后台 Dashboard 说明')
+
     def test_unfold_admin_settings_are_ready_for_installation(self):
         self.assertEqual(settings.UNFOLD['SITE_TITLE'], 'SRMember 管理后台')
         self.assertEqual(settings.UNFOLD['SITE_HEADER'], 'SR思锐 管理后台')
@@ -948,11 +1044,13 @@ class CoreViewTests(TestCase):
 
     def test_admin_feishu_document_list_shows_configured_documents(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
-        FeishuDocument.objects.create(
+        document = FeishuDocument.objects.create(
             title='后台飞书文档',
             document_url='https://example.feishu.cn/docx/admin-token',
             description='后台文档说明',
             manual_cover='https://example.com/admin-doc-cover.png',
+            app_id='document-app-id',
+            app_key='document-app-key',
             is_pinned=True,
         )
         self.client.force_login(user)
@@ -963,17 +1061,37 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '后台飞书文档')
         self.assertContains(response, 'https://example.feishu.cn/docx/admin-token')
         self.assertContains(response, 'https://example.com/admin-doc-cover.png')
+        self.assertContains(response, 'document-app-id')
+        self.assertContains(response, 'document-app-key')
+
+        change_response = self.client.get(f'/admin/core/feishudocument/{document.pk}/change/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(change_response.status_code, 200)
+        self.assertContains(change_response, 'name="app_id"')
+        self.assertContains(change_response, 'value="document-app-id"')
+        self.assertContains(change_response, 'name="app_key"')
+        self.assertContains(change_response, 'value="document-app-key"')
+        self.assertNotContains(change_response, 'type="password"')
 
     def test_admin_feishu_document_setting_allows_global_credentials(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)
         FeishuDocumentSetting.objects.create(app_id='global-app-id', app_key='global-app-key')
         self.client.force_login(user)
 
+        list_response = self.client.get('/admin/core/feishudocumentsetting/', HTTP_HOST='127.0.0.1')
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertContains(list_response, 'global-app-id')
+        self.assertContains(list_response, 'global-app-key')
+
         response = self.client.get('/admin/core/feishudocumentsetting/1/change/', HTTP_HOST='127.0.0.1')
 
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="app_id"')
         self.assertContains(response, 'global-app-id')
-        self.assertContains(response, 'type="password"')
+        self.assertContains(response, 'name="app_key"')
+        self.assertContains(response, 'value="global-app-key"')
+        self.assertNotContains(response, 'type="password"')
 
     def test_admin_member_profile_list_shows_member_cards_data(self):
         user = get_user_model().objects.create_user(username='admin', password='password', is_staff=True, is_superuser=True)

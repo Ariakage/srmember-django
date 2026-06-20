@@ -1,6 +1,5 @@
 import requests
 
-from django import forms
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
@@ -65,8 +64,13 @@ class OAuthLookupCodeAdmin(UnfoldModelAdmin):
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(UnfoldModelAdmin):
-    fields = ('footer_copyright', 'footer_record_text', 'footer_record_url')
-    list_display = ('footer_copyright', 'footer_record_text', 'updated_at')
+    fieldsets = (
+        ('导航栏', {'fields': ('site_name', 'nav_logo_url', 'nav_link_url', 'support_email')}),
+        ('用户字段', {'fields': ('sr_user_id_label',)}),
+        ('首页 Dashboard', {'fields': ('home_dashboard_description',)}),
+        ('页脚', {'fields': ('footer_copyright', 'footer_record_text', 'footer_record_url')}),
+    )
+    list_display = ('site_name', 'support_email', 'nav_link_url', 'footer_record_text', 'updated_at')
 
     def has_add_permission(self, request):
         return not SiteSetting.objects.exists()
@@ -114,23 +118,18 @@ class BioProfileAdmin(UnfoldModelAdmin):
 
 @admin.register(ShortcutLink)
 class ShortcutLinkAdmin(UnfoldModelAdmin):
-    list_display = ('title', 'url', 'sort_order', 'is_active', 'open_new_tab', 'updated_at')
-    list_editable = ('sort_order', 'is_active', 'open_new_tab')
-    list_filter = ('is_active', 'open_new_tab', 'created_at', 'updated_at')
+    list_display = ('title', 'url', 'is_pinned', 'sort_order', 'is_active', 'open_new_tab', 'updated_at')
+    list_editable = ('is_pinned', 'sort_order', 'is_active', 'open_new_tab')
+    list_filter = ('is_active', 'is_pinned', 'open_new_tab', 'created_at', 'updated_at')
     search_fields = ('title', 'url', 'description')
-    fields = ('title', 'url', 'description', 'sort_order', 'is_active', 'open_new_tab')
-    ordering = ('sort_order', 'title')
+    fields = ('title', 'url', 'description', 'is_pinned', 'sort_order', 'is_active', 'open_new_tab')
+    ordering = ('-is_pinned', 'sort_order', 'title')
 
 
 @admin.register(FeishuDocumentSetting)
 class FeishuDocumentSettingAdmin(UnfoldModelAdmin):
     fields = ('app_id', 'app_key')
-    list_display = ('app_id', 'updated_at')
-
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name == 'app_key':
-            kwargs['widget'] = forms.PasswordInput(render_value=True)
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
+    list_display = ('app_id', 'app_key', 'updated_at')
 
     def has_add_permission(self, request):
         return not FeishuDocumentSetting.objects.exists()
@@ -138,10 +137,10 @@ class FeishuDocumentSettingAdmin(UnfoldModelAdmin):
 
 @admin.register(FeishuDocument)
 class FeishuDocumentAdmin(UnfoldModelAdmin):
-    list_display = ('cover_preview', 'display_name', 'document_url', 'is_pinned', 'sort_order', 'is_active', 'updated_at')
+    list_display = ('cover_preview', 'display_name', 'document_url', 'app_id', 'app_key', 'is_pinned', 'sort_order', 'is_active', 'updated_at')
     list_editable = ('is_pinned', 'sort_order', 'is_active')
     list_filter = ('is_active', 'is_pinned', 'open_new_tab', 'created_at', 'updated_at')
-    search_fields = ('title', 'document_url', 'description')
+    search_fields = ('title', 'document_url', 'description', 'app_id', 'app_key')
     readonly_fields = ('cover_preview_large', 'auto_cover', 'last_synced_at')
     fields = (
         'cover_preview_large',
@@ -160,11 +159,6 @@ class FeishuDocumentAdmin(UnfoldModelAdmin):
     )
     ordering = ('-is_pinned', 'sort_order', 'title')
     actions = ('refresh_metadata',)
-
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        if db_field.name == 'app_key':
-            kwargs['widget'] = forms.PasswordInput(render_value=True)
-        return super().formfield_for_dbfield(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
         refresh_feishu_document(obj)

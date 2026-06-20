@@ -190,7 +190,8 @@ Bio
 """
 
 
-def build_nav_items(active=''):
+def build_nav_items(active='', site_setting=None):
+    site_setting = site_setting or SiteSetting.load()
     return [
         {'label': '首页', 'url': reverse('core:home'), 'active': active == 'home'},
         {'label': '成员', 'url': reverse('core:members'), 'active': active == 'members'},
@@ -203,6 +204,7 @@ def build_nav_items(active=''):
             'active': active == 'status',
             'external': True,
         },
+        {'label': '帮助与支持', 'url': f'mailto:{site_setting.support_email}', 'active': active == 'support'},
     ]
 
 

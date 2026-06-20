@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}首页 | SR思锐 团队内部成员系统{% endblock %}
+{% block title %}首页 | {{ site_setting.site_name }} 团队内部成员系统{% endblock %}
 
 {% block content %}
 <section class="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
@@ -9,10 +9,10 @@
             首页
         </div>
         <h1 class="max-w-3xl text-3xl font-semibold tracking-normal text-slate-950 sm:text-4xl dark:text-white">
-            SR思锐 团队内部成员系统
+            {{ site_setting.site_name }} 团队内部成员系统
         </h1>
         <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-            集中管理团队成员、快捷链接与协作资料。
+            {{ site_setting.home_dashboard_description }}
         </p>
         <div class="mt-8 grid gap-4 sm:grid-cols-3">
             <div class="rounded-lg border border-slate-200 p-4 dark:border-white/10">
@@ -21,7 +21,7 @@
             </div>
             <div class="rounded-lg border border-slate-200 p-4 dark:border-white/10">
                 <div class="text-sm text-slate-500 dark:text-slate-400">快捷链接</div>
-                <div class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">待接入</div>
+                <a href="{% url 'core:quick_links' %}" class="mt-2 inline-flex text-lg font-semibold text-slate-950 transition hover:text-primary dark:text-white dark:hover:text-primary-2">查看链接</a>
             </div>
             <div class="rounded-lg border border-slate-200 p-4 dark:border-white/10">
                 <div class="text-sm text-slate-500 dark:text-slate-400">资料中心</div>
