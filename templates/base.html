@@ -6,20 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ site_setting.site_name|default:'SR思锐' }} 团队内部成员系统{% endblock %}</title>
     <link rel="icon" href="/favicon.ico" sizes="any">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#7c6cff',
-                        'primary-2': '#a78bfa'
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="{% static 'core/css/tailwind.css' %}">
+    <script src="{{ site_setting.lucide_cdn_url|default:'https://unpkg.com/lucide@latest' }}"></script>
+    <script src="{{ site_setting.sweetalert2_cdn_url|default:'https://cdn.jsdelivr.net/npm/sweetalert2@11' }}"></script>
     <script>
         const savedTheme = localStorage.getItem('theme')
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -58,6 +47,17 @@
 
         #theme-toggle {
             transform-origin: center;
+        }
+
+        .sr-swal-popup {
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.14);
+        }
+
+        :root.dark .sr-swal-popup {
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
         }
 
         @keyframes sr-theme-reveal {
@@ -112,19 +112,16 @@
             <div class="mx-8 h-8 w-px shrink-0 bg-slate-200 dark:bg-white/10"></div>
             <div class="flex min-w-0 items-center gap-1 overflow-x-auto">
                 {% for item in nav_items %}
-                    <a href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %} class="whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition {% if item.active %}bg-primary text-white shadow-sm shadow-primary/30{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white{% endif %}">
+                    <a href="{{ item.url }}"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %} class="inline-flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition {% if item.active %}bg-primary text-white shadow-sm shadow-primary/30{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white{% endif %}">
+                        <i data-lucide="{{ item.icon }}" class="h-4 w-4" aria-hidden="true"></i>
                         {{ item.label }}
                     </a>
                 {% endfor %}
             </div>
             <div class="ml-auto flex shrink-0 items-center gap-3">
                 <button id="theme-toggle" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2" aria-label="切换深色和浅色模式" aria-pressed="false">
-                    <svg id="theme-icon-moon" class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="currentColor" d="M21 14.6A8.5 8.5 0 0 1 9.4 3a7.7 7.7 0 1 0 11.6 11.6Z" />
-                    </svg>
-                    <svg id="theme-icon-sun" class="hidden h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="currentColor" d="M12 17.2a5.2 5.2 0 1 0 0-10.4 5.2 5.2 0 0 0 0 10.4Zm0-13.7a1.2 1.2 0 0 0 1.2-1.2V1.2a1.2 1.2 0 0 0-2.4 0v1.1A1.2 1.2 0 0 0 12 3.5Zm0 17a1.2 1.2 0 0 0-1.2 1.2v1.1a1.2 1.2 0 0 0 2.4 0v-1.1A1.2 1.2 0 0 0 12 20.5ZM22.8 10.8h-1.1a1.2 1.2 0 0 0 0 2.4h1.1a1.2 1.2 0 0 0 0-2.4Zm-20.5 0H1.2a1.2 1.2 0 0 0 0 2.4h1.1a1.2 1.2 0 0 0 0-2.4Zm16.9-6a1.2 1.2 0 0 0-1.7 0l-.8.8a1.2 1.2 0 1 0 1.7 1.7l.8-.8a1.2 1.2 0 0 0 0-1.7ZM6.5 16.7a1.2 1.2 0 0 0-1.7 0l-.8.8a1.2 1.2 0 0 0 1.7 1.7l.8-.8a1.2 1.2 0 0 0 0-1.7Zm11.9 0a1.2 1.2 0 0 0-1.7 1.7l.8.8a1.2 1.2 0 0 0 1.7-1.7l-.8-.8ZM5.6 4.8a1.2 1.2 0 0 0-1.7 1.7l.8.8a1.2 1.2 0 0 0 1.7-1.7l-.8-.8Z" />
-                    </svg>
+                    <i id="theme-icon-moon" data-lucide="moon" class="h-5 w-5" aria-hidden="true"></i>
+                    <i id="theme-icon-sun" data-lucide="sun" class="hidden h-5 w-5" aria-hidden="true"></i>
                 </button>
                 {% if oauth_user %}
                     <div class="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
@@ -141,7 +138,7 @@
                                 <div class="max-w-32 truncate text-sm font-medium text-slate-950 dark:text-white">{{ oauth_user.nickname }}</div>
                             </div>
                         </a>
-                        <a href="{% url 'core:oauth_logout' %}" class="text-sm font-medium text-slate-500 transition hover:text-primary dark:text-slate-400 dark:hover:text-primary-2">
+                        <a href="{% url 'core:oauth_logout' %}" data-swal-confirm="确定要退出登录吗？" data-swal-confirm-title="退出登录" class="text-sm font-medium text-slate-500 transition hover:text-primary dark:text-slate-400 dark:hover:text-primary-2">
                             退出
                         </a>
                     </div>
@@ -170,13 +167,118 @@
             </a>
         </div>
     </footer>
+    {% if messages %}
+        <script id="sr-django-messages" type="application/json">
+            [
+                {% for message in messages %}
+                    {
+                        "level": "{{ message.tags|default:'info'|escapejs }}",
+                        "text": "{{ message|escapejs }}"
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        </script>
+    {% endif %}
     <script>
+        function renderLucideIcons() {
+            if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                window.lucide.createIcons()
+            }
+        }
+
+        renderLucideIcons()
+
+        function getSweetAlertThemeOptions() {
+            const isDark = document.documentElement.classList.contains('dark')
+
+            return {
+                background: isDark ? '#0f172a' : '#ffffff',
+                color: isDark ? '#f8fafc' : '#0f172a',
+                confirmButtonColor: '#7c6cff',
+                cancelButtonColor: isDark ? '#475569' : '#64748b',
+                customClass: {
+                    popup: 'sr-swal-popup'
+                }
+            }
+        }
+
+        function mapSweetAlertIcon(level) {
+            if (level.includes('success')) {
+                return 'success'
+            }
+            if (level.includes('error') || level.includes('danger')) {
+                return 'error'
+            }
+            if (level.includes('warning')) {
+                return 'warning'
+            }
+            return 'info'
+        }
+
+        function showDjangoMessages() {
+            const messagesElement = document.getElementById('sr-django-messages')
+            if (!messagesElement || !window.Swal) {
+                return
+            }
+
+            let djangoMessages = []
+            try {
+                djangoMessages = JSON.parse(messagesElement.textContent)
+            } catch (error) {
+                return
+            }
+
+            djangoMessages.forEach((message) => {
+                window.Swal.fire({
+                    ...getSweetAlertThemeOptions(),
+                    toast: true,
+                    position: 'top-end',
+                    icon: mapSweetAlertIcon(message.level || ''),
+                    title: message.text,
+                    showConfirmButton: false,
+                    timer: 2600,
+                    timerProgressBar: true
+                })
+            })
+        }
+
+        function bindSweetAlertConfirmations() {
+            if (!window.Swal) {
+                return
+            }
+
+            document.querySelectorAll('[data-swal-confirm]').forEach((link) => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault()
+
+                    window.Swal.fire({
+                        ...getSweetAlertThemeOptions(),
+                        icon: 'question',
+                        title: link.dataset.swalConfirmTitle || '请确认',
+                        text: link.dataset.swalConfirm,
+                        showCancelButton: true,
+                        confirmButtonText: '确认',
+                        cancelButtonText: '取消'
+                    }).then((result) => {
+                        if (!result.isConfirmed) {
+                            return
+                        }
+
+                        window.location.href = link.href
+                    })
+                })
+            })
+        }
+
         const toggleButton = document.getElementById('theme-toggle')
         const themeIconMoon = document.getElementById('theme-icon-moon')
         const themeIconSun = document.getElementById('theme-icon-sun')
         const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
         function syncThemeButton() {
+            if (!toggleButton || !themeIconMoon || !themeIconSun) {
+                return
+            }
             const isDark = document.documentElement.classList.contains('dark')
             toggleButton.setAttribute('aria-pressed', String(isDark))
             themeIconMoon.classList.toggle('hidden', isDark)
@@ -190,6 +292,9 @@
         }
 
         function getThemeTransitionOrigin(event) {
+            if (!toggleButton) {
+                return { radius: 0, x: 0, y: 0 }
+            }
             const rect = toggleButton.getBoundingClientRect()
             const x = event.clientX || rect.left + rect.width / 2
             const y = event.clientY || rect.top + rect.height / 2
@@ -217,7 +322,7 @@
         }
 
         function animateThemeButton() {
-            if (reducedMotionQuery.matches || !toggleButton.animate) {
+            if (!toggleButton || reducedMotionQuery.matches || !toggleButton.animate) {
                 return
             }
             toggleButton.animate(
@@ -233,30 +338,34 @@
             )
         }
 
-        toggleButton.addEventListener('click', (event) => {
-            const isDark = !document.documentElement.classList.contains('dark')
+        if (toggleButton) {
+            toggleButton.addEventListener('click', (event) => {
+                const isDark = !document.documentElement.classList.contains('dark')
 
-            if (!document.startViewTransition || reducedMotionQuery.matches) {
-                setTheme(isDark)
-                animateThemeButton()
-                return
-            }
+                if (!document.startViewTransition || reducedMotionQuery.matches) {
+                    setTheme(isDark)
+                    animateThemeButton()
+                    return
+                }
 
-            const origin = getThemeTransitionOrigin(event)
-            document.documentElement.setAttribute('data-theme-transition', isDark ? 'dark' : 'light')
-            setThemeTransitionVars(origin)
+                const origin = getThemeTransitionOrigin(event)
+                document.documentElement.setAttribute('data-theme-transition', isDark ? 'dark' : 'light')
+                setThemeTransitionVars(origin)
 
-            const transition = document.startViewTransition(() => {
-                setTheme(isDark)
+                const transition = document.startViewTransition(() => {
+                    setTheme(isDark)
+                })
+
+                transition.finished.finally(() => {
+                    clearThemeTransitionVars()
+                    animateThemeButton()
+                })
             })
-
-            transition.finished.finally(() => {
-                clearThemeTransitionVars()
-                animateThemeButton()
-            })
-        })
+        }
 
         syncThemeButton()
+        showDjangoMessages()
+        bindSweetAlertConfirmations()
     </script>
 </body>
 </html>

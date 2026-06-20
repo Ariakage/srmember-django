@@ -24,6 +24,9 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '登录')
         self.assertContains(response, '/static/images/logo.png')
         self.assertContains(response, '/favicon.ico')
+        self.assertContains(response, '/static/core/css/tailwind.css')
+        self.assertNotContains(response, 'cdn.tailwindcss.com')
+        self.assertNotContains(response, 'tailwind.config')
         self.assertContains(response, '首页')
         self.assertContains(response, '成员')
         self.assertContains(response, 'href="/members/"')
@@ -38,6 +41,14 @@ class CoreViewTests(TestCase):
         self.assertContains(response, '帮助与支持')
         self.assertContains(response, 'href="mailto:support@sr-studio.cn"')
         self.assertContains(response, 'target="_blank" rel="noopener noreferrer"')
+        self.assertContains(response, 'https://unpkg.com/lucide@latest')
+        self.assertContains(response, 'https://cdn.jsdelivr.net/npm/sweetalert2@11')
+        self.assertContains(response, 'data-lucide="house"')
+        self.assertContains(response, 'data-lucide="moon"')
+        self.assertContains(response, 'data-lucide="sun"')
+        self.assertContains(response, 'window.lucide.createIcons')
+        self.assertContains(response, 'getSweetAlertThemeOptions')
+        self.assertContains(response, 'bindSweetAlertConfirmations')
         self.assertContains(response, 'document.startViewTransition')
         self.assertContains(response, '@keyframes sr-theme-reveal')
         self.assertContains(response, 'animateThemeButton')
@@ -51,6 +62,8 @@ class CoreViewTests(TestCase):
                 'site_name': 'SR Labs',
                 'nav_logo_url': 'https://example.com/logo.png',
                 'nav_link_url': 'https://example.com/portal',
+                'lucide_cdn_url': 'https://cdn.example.com/lucide.js',
+                'sweetalert2_cdn_url': 'https://cdn.example.com/sweetalert2.js',
                 'support_email': 'help@example.com',
                 'home_dashboard_description': '自定义 Dashboard 说明',
             },
@@ -64,6 +77,8 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'https://example.com/logo.png')
         self.assertContains(response, 'alt="SR Labs"')
         self.assertContains(response, 'href="https://example.com/portal" target="_blank" rel="noopener noreferrer"')
+        self.assertContains(response, 'https://cdn.example.com/lucide.js')
+        self.assertContains(response, 'https://cdn.example.com/sweetalert2.js')
         self.assertContains(response, 'href="mailto:help@example.com"')
         self.assertContains(response, '自定义 Dashboard 说明')
         self.assertContains(response, '团队内部成员系统')
@@ -170,6 +185,7 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'Ariakage')
         self.assertContains(response, 'https://example.com/avatar.png')
         self.assertContains(response, 'href="/bio/"')
+        self.assertContains(response, 'data-swal-confirm="确定要退出登录吗？"')
 
     def test_quick_links_page_shows_active_configured_links(self):
         ShortcutLink.objects.create(
@@ -719,6 +735,9 @@ class CoreViewTests(TestCase):
 
         response = self.client.get('/bio/', HTTP_HOST='127.0.0.1')
 
+        self.assertContains(response, 'sr-django-messages')
+        self.assertContains(response, 'Bio 已保存。')
+        self.assertContains(response, 'showDjangoMessages')
         self.assertContains(response, '<h1 id="hello-bio">Hello Bio</h1>', html=True)
         self.assertContains(response, 'class="admonition note"')
         self.assertContains(response, 'class="arithmatex"')
@@ -1020,6 +1039,11 @@ class CoreViewTests(TestCase):
         self.assertNotIn(views.OAUTH_USER_SESSION_KEY, self.client.session)
         self.assertNotIn('_auth_user_id', self.client.session)
 
+        response = self.client.get('/', HTTP_HOST='127.0.0.1')
+
+        self.assertContains(response, 'sr-django-messages')
+        self.assertContains(response, '已退出登录。')
+
     def test_admin_login_redirects_to_oauth_login(self):
         response = self.client.get('/admin/login/?next=/admin/', HTTP_HOST='127.0.0.1')
 
@@ -1057,6 +1081,8 @@ class CoreViewTests(TestCase):
                 'site_name': '后台站点名',
                 'nav_logo_url': 'https://example.com/admin-logo.png',
                 'nav_link_url': 'https://example.com/admin-home',
+                'lucide_cdn_url': 'https://cdn.example.com/admin-lucide.js',
+                'sweetalert2_cdn_url': 'https://cdn.example.com/admin-sweetalert2.js',
                 'support_email': 'admin-support@example.com',
                 'sr_user_id_label': '后台用户 ID',
                 'home_dashboard_description': '后台 Dashboard 说明',
@@ -1070,6 +1096,8 @@ class CoreViewTests(TestCase):
         self.assertContains(list_response, '后台站点名')
         self.assertContains(list_response, 'admin-support@example.com')
         self.assertContains(list_response, 'https://example.com/admin-home')
+        self.assertContains(list_response, 'https://cdn.example.com/admin-lucide.js')
+        self.assertContains(list_response, 'https://cdn.example.com/admin-sweetalert2.js')
 
         response = self.client.get('/admin/core/sitesetting/1/change/', HTTP_HOST='127.0.0.1')
 
@@ -1080,6 +1108,10 @@ class CoreViewTests(TestCase):
         self.assertContains(response, 'value="https://example.com/admin-logo.png"')
         self.assertContains(response, 'name="nav_link_url"')
         self.assertContains(response, 'value="https://example.com/admin-home"')
+        self.assertContains(response, 'name="lucide_cdn_url"')
+        self.assertContains(response, 'value="https://cdn.example.com/admin-lucide.js"')
+        self.assertContains(response, 'name="sweetalert2_cdn_url"')
+        self.assertContains(response, 'value="https://cdn.example.com/admin-sweetalert2.js"')
         self.assertContains(response, 'name="support_email"')
         self.assertContains(response, 'value="admin-support@example.com"')
         self.assertContains(response, 'name="sr_user_id_label"')

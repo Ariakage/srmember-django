@@ -9,6 +9,7 @@ from urllib.parse import urlencode, urlsplit
 import requests
 from authlib.integrations.base_client import OAuthError
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
@@ -196,18 +197,19 @@ Bio
 def build_nav_items(active='', site_setting=None):
     site_setting = site_setting or SiteSetting.load()
     return [
-        {'label': '首页', 'url': reverse('core:home'), 'active': active == 'home'},
-        {'label': '成员', 'url': reverse('core:members'), 'active': active == 'members'},
-        {'label': '文档', 'url': reverse('core:documents'), 'active': active == 'docs'},
-        {'label': 'Bio.', 'url': reverse('core:bio'), 'active': active == 'bio'},
-        {'label': '快捷链接', 'url': reverse('core:quick_links'), 'active': active == 'links'},
+        {'label': '首页', 'url': reverse('core:home'), 'active': active == 'home', 'icon': 'house'},
+        {'label': '成员', 'url': reverse('core:members'), 'active': active == 'members', 'icon': 'users'},
+        {'label': '文档', 'url': reverse('core:documents'), 'active': active == 'docs', 'icon': 'file-text'},
+        {'label': 'Bio.', 'url': reverse('core:bio'), 'active': active == 'bio', 'icon': 'id-card'},
+        {'label': '快捷链接', 'url': reverse('core:quick_links'), 'active': active == 'links', 'icon': 'link'},
         {
             'label': '服务器状态',
             'url': 'https://status.srinternet.top/dashboard',
             'active': active == 'status',
             'external': True,
+            'icon': 'activity',
         },
-        {'label': '帮助与支持', 'url': f'mailto:{site_setting.support_email}', 'active': active == 'support'},
+        {'label': '帮助与支持', 'url': f'mailto:{site_setting.support_email}', 'active': active == 'support', 'icon': 'life-buoy'},
     ]
 
 
@@ -337,7 +339,9 @@ def bio_edit(request):
         form = BioProfileForm(request.POST, instance=bio_profile)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Bio 已保存。')
             return redirect('core:bio')
+        messages.error(request, 'Bio 保存失败，请检查表单内容。')
     else:
         form = BioProfileForm(instance=bio_profile)
 
@@ -399,6 +403,7 @@ def oauth_callback(request):
 
 def oauth_logout(request):
     django_logout(request)
+    messages.success(request, '已退出登录。')
     return redirect('core:home')
 
 

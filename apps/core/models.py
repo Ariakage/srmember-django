@@ -231,6 +231,16 @@ class SiteSetting(models.Model):
         default='/',
         verbose_name='导航跳转地址',
     )
+    lucide_cdn_url = models.URLField(
+        max_length=500,
+        default='https://unpkg.com/lucide@latest',
+        verbose_name='Lucide CDN 链接',
+    )
+    sweetalert2_cdn_url = models.URLField(
+        max_length=500,
+        default='https://cdn.jsdelivr.net/npm/sweetalert2@11',
+        verbose_name='SweetAlert2 CDN 链接',
+    )
     support_email = models.EmailField(
         default='support@sr-studio.cn',
         verbose_name='支持邮箱',

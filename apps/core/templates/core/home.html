@@ -16,25 +16,46 @@
                 {{ site_setting.home_dashboard_description }}
             </p>
             <div class="mt-8 flex flex-wrap gap-3">
-                <a href="{% url 'core:members' %}" class="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:bg-primary-2">查看成员</a>
-                <a href="{% url 'core:documents' %}" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">查看文档</a>
-                <a href="{% url 'core:quick_links' %}" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">查看链接</a>
-                <a href="{% url 'core:bio' %}" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">我的 Bio</a>
+                <a href="{% url 'core:members' %}" class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary/30 transition hover:bg-primary-2">
+                    <i data-lucide="users" class="h-4 w-4" aria-hidden="true"></i>
+                    查看成员
+                </a>
+                <a href="{% url 'core:documents' %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">
+                    <i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>
+                    查看文档
+                </a>
+                <a href="{% url 'core:quick_links' %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">
+                    <i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>
+                    查看链接
+                </a>
+                <a href="{% url 'core:bio' %}" class="inline-flex items-center gap-2 rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary dark:border-white/10 dark:text-slate-200 dark:hover:border-primary-2 dark:hover:text-primary-2">
+                    <i data-lucide="id-card" class="h-4 w-4" aria-hidden="true"></i>
+                    我的 Bio
+                </a>
             </div>
             <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:absolute lg:right-6 lg:top-6 lg:mt-0 lg:w-48 lg:grid-cols-1">
                 <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                    <div class="text-xs font-medium text-slate-500 dark:text-slate-400">网站响应时间</div>
+                    <div class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <i data-lucide="timer" class="h-4 w-4" aria-hidden="true"></i>
+                        网站响应时间
+                    </div>
                     <div class="mt-1 text-xl font-semibold text-slate-950 dark:text-white">{{ response_time_ms }} ms</div>
                 </div>
                 <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 dark:border-white/10 dark:bg-white/5">
-                    <div class="text-xs font-medium text-slate-500 dark:text-slate-400">网站访问次数</div>
+                    <div class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                        <i data-lucide="eye" class="h-4 w-4" aria-hidden="true"></i>
+                        网站访问次数
+                    </div>
                     <div class="mt-1 text-xl font-semibold text-slate-950 dark:text-white">{{ site_setting.website_visit_count }}</div>
                 </div>
             </div>
         </div>
 
         <aside class="rounded-lg border border-slate-200 bg-gradient-to-br from-primary to-primary-2 p-6 text-white shadow-sm">
-            <div class="text-sm font-medium text-white/80">当前入口</div>
+            <div class="inline-flex items-center gap-2 text-sm font-medium text-white/80">
+                <i data-lucide="door-open" class="h-4 w-4" aria-hidden="true"></i>
+                当前入口
+            </div>
             <div class="mt-3 text-2xl font-semibold tracking-normal">团队内部成员系统</div>
             <div class="mt-6 rounded-md bg-white/15 p-4 text-sm leading-6 text-white/90">
                 {% if oauth_user %}
@@ -43,7 +64,8 @@
                     登录后可维护个人 Bio，访客仍可查看公开成员、文档和快捷链接。
                 {% endif %}
             </div>
-            <a href="mailto:{{ site_setting.support_email }}" class="mt-4 inline-flex rounded-md bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-white/90">
+            <a href="mailto:{{ site_setting.support_email }}" class="mt-4 inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition hover:bg-white/90">
+                <i data-lucide="life-buoy" class="h-4 w-4" aria-hidden="true"></i>
                 联系支持
             </a>
         </aside>
@@ -53,17 +75,26 @@
         <h2 class="text-xl font-semibold tracking-normal text-slate-950 dark:text-white">系统概览</h2>
         <div class="grid gap-4 md:grid-cols-3">
             <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <div class="text-sm text-slate-500 dark:text-slate-400">成员资料</div>
+                <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <i data-lucide="users" class="h-4 w-4" aria-hidden="true"></i>
+                    成员资料
+                </div>
                 <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{{ active_members_count }}</div>
                 <a href="{% url 'core:members' %}" class="mt-4 inline-flex text-sm font-semibold text-primary transition hover:text-primary-2">查看成员</a>
             </div>
             <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <div class="text-sm text-slate-500 dark:text-slate-400">快捷链接</div>
+                <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <i data-lucide="link" class="h-4 w-4" aria-hidden="true"></i>
+                    快捷链接
+                </div>
                 <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{{ active_shortcut_links_count }}</div>
                 <a href="{% url 'core:quick_links' %}" class="mt-4 inline-flex text-sm font-semibold text-primary transition hover:text-primary-2">查看链接</a>
             </div>
             <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-white/5">
-                <div class="text-sm text-slate-500 dark:text-slate-400">团队文档</div>
+                <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <i data-lucide="file-text" class="h-4 w-4" aria-hidden="true"></i>
+                    团队文档
+                </div>
                 <div class="mt-2 text-3xl font-semibold text-slate-950 dark:text-white">{{ active_documents_count }}</div>
                 <a href="{% url 'core:documents' %}" class="mt-4 inline-flex text-sm font-semibold text-primary transition hover:text-primary-2">查看文档</a>
             </div>
@@ -74,7 +105,10 @@
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <div class="text-sm font-medium text-primary">置顶</div>
+                    <div class="inline-flex items-center gap-2 text-sm font-medium text-primary">
+                        <i data-lucide="pin" class="h-4 w-4" aria-hidden="true"></i>
+                        置顶
+                    </div>
                     <h2 class="mt-1 text-xl font-semibold tracking-normal text-slate-950 dark:text-white">快捷链接</h2>
                 </div>
                 <a href="{% url 'core:quick_links' %}" class="text-sm font-semibold text-slate-500 transition hover:text-primary dark:text-slate-400 dark:hover:text-primary-2">全部链接</a>
@@ -87,7 +121,10 @@
                             <span class="mt-1 block truncate text-sm text-purple-800/80 dark:text-purple-100/75">{{ link.description }}</span>
                         {% endif %}
                     </span>
-                    <span class="shrink-0 rounded-md bg-purple-800 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-purple-800/25 transition group-hover:bg-purple-700">打开</span>
+                    <span class="inline-flex shrink-0 items-center gap-2 rounded-md bg-purple-800 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-purple-800/25 transition group-hover:bg-purple-700">
+                        <i data-lucide="external-link" class="h-4 w-4" aria-hidden="true"></i>
+                        打开
+                    </span>
                 </a>
             {% empty %}
                 <div class="rounded-lg border border-dashed border-slate-300 bg-white px-5 py-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400">
@@ -99,7 +136,10 @@
         <section class="space-y-3">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <div class="text-sm font-medium text-primary">置顶</div>
+                    <div class="inline-flex items-center gap-2 text-sm font-medium text-primary">
+                        <i data-lucide="pin" class="h-4 w-4" aria-hidden="true"></i>
+                        置顶
+                    </div>
                     <h2 class="mt-1 text-xl font-semibold tracking-normal text-slate-950 dark:text-white">团队文档</h2>
                 </div>
                 <a href="{% url 'core:documents' %}" class="text-sm font-semibold text-slate-500 transition hover:text-primary dark:text-slate-400 dark:hover:text-primary-2">全部文档</a>
@@ -110,7 +150,7 @@
                         {% if document.cover_url %}
                             <img src="{{ document.cover_url }}" alt="{{ document.display_title }}" class="h-full w-full object-cover">
                         {% else %}
-                            Docs
+                            <i data-lucide="file-text" class="h-8 w-8" aria-hidden="true"></i>
                         {% endif %}
                     </span>
                     <span class="min-w-0 flex-1 px-5 py-4">

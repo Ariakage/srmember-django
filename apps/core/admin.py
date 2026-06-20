@@ -66,12 +66,22 @@ class OAuthLookupCodeAdmin(UnfoldModelAdmin):
 class SiteSettingAdmin(UnfoldModelAdmin):
     fieldsets = (
         ('导航栏', {'fields': ('site_name', 'nav_logo_url', 'nav_link_url', 'support_email')}),
+        ('前端资源', {'fields': ('lucide_cdn_url', 'sweetalert2_cdn_url')}),
         ('用户字段', {'fields': ('sr_user_id_label',)}),
         ('首页 Dashboard', {'fields': ('home_dashboard_description', 'website_visit_count')}),
         ('页脚', {'fields': ('footer_copyright', 'footer_record_text', 'footer_record_url')}),
     )
     readonly_fields = ('website_visit_count',)
-    list_display = ('site_name', 'support_email', 'nav_link_url', 'website_visit_count', 'footer_record_text', 'updated_at')
+    list_display = (
+        'site_name',
+        'support_email',
+        'nav_link_url',
+        'lucide_cdn_url',
+        'sweetalert2_cdn_url',
+        'website_visit_count',
+        'footer_record_text',
+        'updated_at',
+    )
 
     def has_add_permission(self, request):
         return not SiteSetting.objects.exists()
